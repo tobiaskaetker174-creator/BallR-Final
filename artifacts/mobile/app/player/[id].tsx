@@ -133,6 +133,13 @@ export default function PlayerProfileScreen() {
     }
   }, [id, localPlayer]);
 
+  // ALL hooks must be declared before any conditional returns
+  const [reviewText, setReviewText] = useState("");
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [isRival, setIsRival] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+
   // 4. Show loading while API fetches, then fall back to fake player
   const player: Player | null = localPlayer ?? apiPlayer ?? (apiDone ? generateFakePlayer(id ?? "unknown") : null);
 
@@ -153,11 +160,6 @@ export default function PlayerProfileScreen() {
   const winRate = player.gamesPlayed > 0 ? Math.round((player.gamesWon / player.gamesPlayed) * 100) : 0;
   const eloPublicForPlayer = isCurrentUser || isEloPublic(player, PLAYERS);
   const reviews = PROFILE_REVIEWS.filter((r) => r.status === "accepted" && r.subjectId === player.id);
-  const [reviewText, setReviewText] = useState("");
-  const [reviewSubmitted, setReviewSubmitted] = useState(false);
-  const [isRival, setIsRival] = useState(false);
-  const [showCompare, setShowCompare] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(FOLLOWED_PLAYER_IDS.has(player.id));
 
   const me = PLAYERS[0];
   const meWinRate = me.gamesPlayed > 0 ? Math.round((me.gamesWon / me.gamesPlayed) * 100) : 0;
