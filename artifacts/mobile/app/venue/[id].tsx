@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { ComponentProps } from "react";
 import {
+  Image,
   Linking,
   Platform,
   Pressable,
@@ -17,6 +18,9 @@ import Colors from "@/constants/colors";
 import {
   ALL_GAMES,
   VENUES_LIST,
+  VENUE_STATS,
+  PLAYERS,
+  VenueStats,
   Game,
   formatGameTime,
   formatPrice,
@@ -24,6 +28,14 @@ import {
   getSkillLabel,
   getSurfaceIcon,
 } from "@/constants/mock";
+
+const VENUE_IMAGES: Record<string, string> = {
+  v1: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&h=400&fit=crop",
+  v2: "https://images.unsplash.com/photo-1556056504-5c7696c4c28d?w=800&h=400&fit=crop",
+  v3: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&h=400&fit=crop",
+  v4: "https://images.unsplash.com/photo-1624880357913-a8539238245b?w=800&h=400&fit=crop",
+  v5: "https://images.unsplash.com/photo-1518604666860-9ed391f76460?w=800&h=400&fit=crop",
+};
 
 const AMENITY_ICONS: Record<string, { icon: ComponentProps<typeof Ionicons>["name"]; label: string }> = {
   changing_rooms: { icon: "shirt-outline", label: "Changing Rooms" },
@@ -141,13 +153,23 @@ export default function VenueDetailScreen() {
         contentContainerStyle={{ paddingBottom: bottomPadding + 24 }}
       >
         <View style={styles.hero}>
-          <LinearGradient
-            colors={[Colors.primary, "#1A3A17"]}
-            style={styles.heroGradient}
-          />
-          <View style={styles.heroInitials}>
-            <Text style={styles.heroInitialsText}>{initials}</Text>
-          </View>
+          {VENUE_IMAGES[venue.id] ? (
+            <Image
+              source={{ uri: VENUE_IMAGES[venue.id] }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <>
+              <LinearGradient
+                colors={[Colors.primary, "#1A3A17"]}
+                style={styles.heroGradient}
+              />
+              <View style={styles.heroInitials}>
+                <Text style={styles.heroInitialsText}>{initials}</Text>
+              </View>
+            </>
+          )}
           <LinearGradient
             colors={["transparent", "rgba(20,19,18,0.9)"]}
             style={styles.heroBottomGradient}
@@ -216,6 +238,78 @@ export default function VenueDetailScreen() {
             </View>
           </View>
         )}
+
+        {VENUE_STATS[venue.id] && (() => {
+          const stats: VenueStats = VENUE_STATS[venue.id];
+          const topPlayerData = stats.topPlayers.map((name) => {
+            const p = PLAYERS.find((pl) => pl.name === name || pl.name.startsWith(name.split(" ")[0]));
+            return { name, wins: p?.gamesWon ?? 0, losses: p?.gamesLost ?? 0 };
+          });
+          const bestP = stats.bestPerformer ? PLAYERS.find((pl) => pl.name === stats.bestPerformer || pl.name.startsWith(stats.bestPerformer!.split(" ")[0])) : null;
+          const bestWinRate = bestP && bestP.gamesPlayed > 0 ? Math.round((bestP.gamesWon / bestP.gamesPlayed) * 100) : 0;
+
+          return (
+            <>
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>📊 VENUE STATS</Text>
+                <View style={styles.venueStatsCard}>
+                  <View style={styles.venueStatRow}>
+                    <Text style={styles.venueStatLabel}>Total Games Played</Text>
+                    <Text style={styles.venueStatValue}>{stats.totalGamesPlayed}</Text>
+                  </View>
+                  <View style={styles.venueStatSep} />
+                  <View style={styles.venueStatRow}>
+                    <Text style={styles.venueStatLabel}>Most Active Day</Text>
+                    <Text style={styles.venueStatValue}>{stats.mostActiveDay}</Text>
+                  </View>
+                  <View style={styles.venueStatSep} />
+                  <View style={styles.venueStatRow}>
+                    <Text style={styles.venueStatLabel}>Peak Time</Text>
+                    <Text style={styles.venueStatValue}>{stats.peakTime}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>🏆 TOP PLAYERS AT THIS VENUE</Text>
+                <View style={styles.venueStatsCard}>
+                  {topPlayerData.map((tp, i) => (
+                    <View key={tp.name}>
+                      {i > 0 && <View style={styles.venueStatSep} />}
+                      <View style={styles.venueStatRow}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                          <Text style={{ fontSize: 14 }}>{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</Text>
+                          <Text style={styles.venueStatValue}>{tp.name}</Text>
+                        </View>
+                        <Text style={styles.venueStatLabel}>{tp.wins}W-{tp.losses}L</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {bestP && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>🎯 BEST PERFORMER</Text>
+                  <View style={styles.bestPerformerCard}>
+                    <View style={styles.bestPerformerAvatar}>
+                      <Text style={styles.bestPerformerInitials}>
+                        {bestP.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={styles.bestPerformerName}>{bestP.name}</Text>
+                      <Text style={styles.bestPerformerStat}>{bestWinRate}% win rate · {bestP.gamesPlayed} games</Text>
+                    </View>
+                    <View style={styles.bestPerformerBadge}>
+                      <Text style={styles.bestPerformerBadgeText}>MVP</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </>
+          );
+        })()}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>LOCATION</Text>
@@ -588,5 +682,82 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     fontSize: 14,
     color: Colors.muted,
+  },
+  heroImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
+  venueStatsCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  venueStatRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  venueStatLabel: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    color: Colors.muted,
+  },
+  venueStatValue: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    color: Colors.text,
+  },
+  venueStatSep: {
+    height: 1,
+    backgroundColor: Colors.separator,
+    marginHorizontal: 14,
+  },
+  bestPerformerCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 14,
+    gap: 12,
+  },
+  bestPerformerAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bestPerformerInitials: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 15,
+    color: Colors.text,
+  },
+  bestPerformerName: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    color: Colors.text,
+  },
+  bestPerformerStat: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: Colors.muted,
+  },
+  bestPerformerBadge: {
+    backgroundColor: `${Colors.amber}22`,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: `${Colors.amber}44`,
+  },
+  bestPerformerBadgeText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 10,
+    color: Colors.amber,
+    letterSpacing: 1,
   },
 });

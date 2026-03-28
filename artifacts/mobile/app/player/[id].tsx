@@ -23,6 +23,8 @@ import {
   formatTimestamp,
   isEloPublic,
   getEloPercentile,
+  getEloBadgeTier,
+  ALL_GAMES,
 } from "@/constants/mock";
 
 const FOOT_LABEL: Record<string, string> = { left: "Left foot", right: "Right foot", both: "Both feet" };
@@ -34,7 +36,26 @@ export default function PlayerProfileScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const player = PLAYERS.find((p) => p.id === id);
+  const directPlayer = PLAYERS.find((p) => p.id === id);
+
+  // FIX 10: Fallback lookup - try to construct minimal player from game data
+  const player = directPlayer ?? (() => {
+    // Search through all games for any reference to this player ID
+    for (const game of ALL_GAMES) {
+      // Check organizer
+      if (game.organizer && game.organizer.id === id) {
+        return game.organizer;
+      }
+      // Check bookings
+      if (game.bookings) {
+        const booking = game.bookings.find((b) => b.player.id === id);
+        if (booking) {
+          return booking.player;
+        }
+      }
+    }
+    return null;
+  })();
 
   if (!player) {
     return (
@@ -61,6 +82,7 @@ export default function PlayerProfileScreen() {
 
   const isCurrentUser = player.isCurrentUser;
   const eloTier = getEloLabel(player.eloRating);
+  const badgeTier = getEloBadgeTier(player, PLAYERS);
   const reliabilityColor = getReliabilityColor(player.reliabilityScore);
   const reliabilityLabel = getReliabilityLabel(player.reliabilityScore);
   const initials = player.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
@@ -104,9 +126,17 @@ export default function PlayerProfileScreen() {
       >
         <View style={styles.heroSection}>
           <View style={styles.avatarOuter}>
-            <View style={styles.avatarInner}>
+            <View style={[
+              styles.avatarInner,
+              badgeTier ? { borderWidth: 3, borderColor: badgeTier.ringColor } : undefined,
+            ]}>
               <Text style={styles.avatarInitials}>{initials}</Text>
             </View>
+            {badgeTier && (
+              <View style={styles.eloBadgeIcon}>
+                <Text style={{ fontSize: 14 }}>{badgeTier.icon}</Text>
+              </View>
+            )}
             {player.medal && (
               <View style={styles.medalBubble}>
                 <Text style={{ fontSize: 16 }}>
@@ -566,6 +596,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: 12,
     padding: 2,
+  },
+  eloBadgeIcon: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    backgroundColor: Colors.surface,
+    borderRadius: 11,
+    width: 22,
+    height: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   playerName: { fontFamily: "Inter_700Bold", fontSize: 24, color: Colors.text, letterSpacing: -0.3 },
   playerSubRow: { flexDirection: "row", alignItems: "center", gap: 6 },

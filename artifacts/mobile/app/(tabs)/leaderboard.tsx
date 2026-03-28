@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
-import { POTM_ENTRIES, PotmEntry, PLAYERS, isEloPublic, Player, getFairnessScore } from "@/constants/mock";
+import { POTM_ENTRIES, PotmEntry, PLAYERS, isEloPublic, Player, getFairnessScore, getEloBadgeTier } from "@/constants/mock";
 import { useBallrData } from "@/context/BallrDataContext";
 import { ActivityIndicator } from "react-native";
 
@@ -37,6 +37,7 @@ function PodiumBlock({ entry, rank }: { entry: PotmEntry; rank: number }) {
   const avatarColors = [Colors.primary, Colors.blue, Colors.teal];
   const avatarBg = avatarColors[(rank - 1) % avatarColors.length];
   const medalIcon = rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
+  const badgeTier = getEloBadgeTier(entry.player, PLAYERS);
 
   return (
     <Pressable
@@ -50,22 +51,29 @@ function PodiumBlock({ entry, rank }: { entry: PotmEntry; rank: number }) {
           </View>
         )}
         <Text style={styles.podiumMedal}>{medalIcon}</Text>
-        <View
-          style={[
-            styles.podiumAvatar,
-            {
-              width: avatarSize,
-              height: avatarSize,
-              borderRadius: avatarSize / 2,
-              backgroundColor: avatarBg,
-              borderWidth: isFirst ? 2 : 1,
-              borderColor: isFirst ? Colors.amber : "transparent",
-            },
-          ]}
-        >
-          <Text style={[styles.podiumAvatarInitials, { fontSize: avatarSize * 0.36 }]}>
-            {initials}
-          </Text>
+        <View style={{ position: "relative" }}>
+          <View
+            style={[
+              styles.podiumAvatar,
+              {
+                width: avatarSize,
+                height: avatarSize,
+                borderRadius: avatarSize / 2,
+                backgroundColor: avatarBg,
+                borderWidth: badgeTier ? 3 : isFirst ? 2 : 1,
+                borderColor: badgeTier ? badgeTier.ringColor : isFirst ? Colors.amber : "transparent",
+              },
+            ]}
+          >
+            <Text style={[styles.podiumAvatarInitials, { fontSize: avatarSize * 0.36 }]}>
+              {initials}
+            </Text>
+          </View>
+          {badgeTier && (
+            <View style={styles.podiumBadgeIcon}>
+              <Text style={{ fontSize: 12 }}>{badgeTier.icon}</Text>
+            </View>
+          )}
         </View>
         <Text style={styles.podiumName} numberOfLines={1}>
           {entry.player.name.split(" ")[0]}
@@ -111,6 +119,7 @@ function RankRow({ entry, isCurrentUser, mode, eloPeriod }: {
 
   const avatarColors = [Colors.primary, Colors.blue, Colors.teal, Colors.purple, Colors.amber];
   const avatarBg = avatarColors[entry.rank % avatarColors.length];
+  const badgeTier = getEloBadgeTier(entry.player, PLAYERS);
 
   const isEloMode = mode === "elo";
   const isChampionMode = mode === "champion";
@@ -128,8 +137,17 @@ function RankRow({ entry, isCurrentUser, mode, eloPeriod }: {
       <Text style={[styles.rankNum, { color: rankColor }]}>
         {entry.rank < 10 ? `0${entry.rank}` : entry.rank}
       </Text>
-      <View style={[styles.rankAvatar, { backgroundColor: avatarBg }]}>
+      <View style={[
+        styles.rankAvatar,
+        { backgroundColor: avatarBg },
+        badgeTier ? { borderWidth: 2, borderColor: badgeTier.ringColor } : undefined,
+      ]}>
         <Text style={styles.rankAvatarText}>{initials}</Text>
+        {badgeTier && (
+          <View style={styles.rankBadgeIcon}>
+            <Text style={{ fontSize: 10, lineHeight: 13 }}>{badgeTier.icon}</Text>
+          </View>
+        )}
       </View>
       <View style={styles.rankInfo}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
@@ -170,13 +188,14 @@ function RankRow({ entry, isCurrentUser, mode, eloPeriod }: {
   );
 }
 
-type RankMode = "botm" | "elo" | "champion";
+type RankMode = "botm" | "elo" | "champion" | "gotm";
 type EloTimePeriod = "month" | "alltime";
 type DropdownOption = { id: RankMode; label: string; icon: string };
 const DROPDOWN_OPTIONS: DropdownOption[] = [
   { id: "botm", label: "Baller of the Month", icon: "🏆" },
   { id: "elo", label: "ELO Ranking", icon: "⚡" },
   { id: "champion", label: "Fairness Award", icon: "🤝" },
+  { id: "gotm", label: "Tor des Monats", icon: "⚽" },
 ];
 
 export default function LeaderboardScreen() {
@@ -216,7 +235,9 @@ export default function LeaderboardScreen() {
       avgSkillRating: p.avgSportsmanshipRating,
     }));
 
-  const sortedEntries: PotmEntry[] = rankMode === "champion"
+  const sortedEntries: PotmEntry[] = rankMode === "gotm"
+    ? []
+    : rankMode === "champion"
     ? championEntries
     : rankMode === "botm"
     ? [...activePotm].sort((a, b) => b.potmScore - a.potmScore)
@@ -287,9 +308,9 @@ export default function LeaderboardScreen() {
 
             <View style={styles.monthHeader}>
               <Text style={styles.monthSub}>
-                {rankMode === "botm" ? "BALLER OF THE MONTH" : rankMode === "champion" ? "COMMUNITY CHAMPION" : "ELO RANKINGS"}
+                {rankMode === "botm" ? "BALLER OF THE MONTH" : rankMode === "champion" ? "COMMUNITY CHAMPION" : rankMode === "gotm" ? "TOR DES MONATS" : "ELO RANKINGS"}
               </Text>
-              <Text style={styles.monthTitle}>{rankMode === "botm" ? `${month} ${year}` : rankMode === "champion" ? `${month} ${year}` : "Rankings"}</Text>
+              <Text style={styles.monthTitle}>{rankMode === "botm" ? `${month} ${year}` : rankMode === "champion" ? `${month} ${year}` : rankMode === "gotm" ? `${month} ${year}` : "Rankings"}</Text>
             </View>
 
             {rankMode === "champion" && (
@@ -511,43 +532,51 @@ export default function LeaderboardScreen() {
               </View>
             )}
 
-            <View style={styles.podiumContainer}>
-              {top3.length >= 2 && <PodiumBlock entry={top3[1]} rank={top3[1].rank} />}
-              {top3.length >= 1 && <PodiumBlock entry={top3[0]} rank={top3[0].rank} />}
-              {top3.length >= 3 && <PodiumBlock entry={top3[2]} rank={top3[2].rank} />}
-            </View>
+            {rankMode === "gotm" ? (
+              <View style={styles.gotmCard}>
+                <View style={styles.gotmBadgeRow}>
+                  <View style={styles.gotmComingSoonBadge}>
+                    <Text style={styles.gotmComingSoonText}>COMING SOON</Text>
+                  </View>
+                </View>
+                <Text style={styles.gotmTitle}>Tor des Monats</Text>
+                <Text style={styles.gotmDesc}>
+                  Nominate and vote on the best goals each month — featuring Pixelot match footage, timestamps, and community voting. Launching soon!
+                </Text>
+                <View style={styles.gotmPreviewRow}>
+                  {["🥇 127 nominations", "🥈 89 nominations", "🥉 54 nominations"].map((t, i) => (
+                    <View key={i} style={styles.gotmPreviewChip}>
+                      <Text style={styles.gotmPreviewChipText}>{t}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              <>
+                {rankMode === "elo" && eloPeriod === "month" && (
+                  <Text style={styles.eloGainerTitle}>Gr{"\u00F6"}{"\u00DF"}te ELO Gainer diesen Monat</Text>
+                )}
 
-            <View style={styles.listHeader}>
-              <Text style={styles.listHeaderText}>
-                {rankMode === "botm" ? "FULL RANKINGS" : rankMode === "champion" ? "FAIRNESS RANKINGS" : eloPeriod === "month" ? "ELO GAIN THIS MONTH" : "ELO LADDER"}
-              </Text>
-              <View style={styles.listHeaderDivider} />
-              <Text style={styles.listHeaderRight}>
-                {rankMode === "botm" ? "PTS" : rankMode === "champion" ? "SCORE" : eloPeriod === "month" ? "+ELO" : "ELO"}
-              </Text>
-            </View>
+                <View style={styles.podiumContainer}>
+                  {top3.length >= 2 && <PodiumBlock entry={top3[1]} rank={top3[1].rank} />}
+                  {top3.length >= 1 && <PodiumBlock entry={top3[0]} rank={top3[0].rank} />}
+                  {top3.length >= 3 && <PodiumBlock entry={top3[2]} rank={top3[2].rank} />}
+                </View>
+
+                <View style={styles.listHeader}>
+                  <Text style={styles.listHeaderText}>
+                    {rankMode === "botm" ? "FULL RANKINGS" : rankMode === "champion" ? "FAIRNESS RANKINGS" : eloPeriod === "month" ? "BIGGEST ELO GAINERS THIS MONTH" : "ELO LADDER"}
+                  </Text>
+                  <View style={styles.listHeaderDivider} />
+                  <Text style={styles.listHeaderRight}>
+                    {rankMode === "botm" ? "PTS" : rankMode === "champion" ? "SCORE" : eloPeriod === "month" ? "+ELO" : "ELO"}
+                  </Text>
+                </View>
+              </>
+            )}
           </>
         }
-        ListFooterComponent={
-          <View style={styles.gotmCard}>
-            <View style={styles.gotmBadgeRow}>
-              <View style={styles.gotmComingSoonBadge}>
-                <Text style={styles.gotmComingSoonText}>COMING SOON</Text>
-              </View>
-            </View>
-            <Text style={styles.gotmTitle}>⚽ Goal of the Month</Text>
-            <Text style={styles.gotmDesc}>
-              Nominate and vote on the best goals each month — featuring Pixelot match footage, timestamps, and community voting. Launching soon!
-            </Text>
-            <View style={styles.gotmPreviewRow}>
-              {["🥇 127 nominations", "🥈 89 nominations", "🥉 54 nominations"].map((t, i) => (
-                <View key={i} style={styles.gotmPreviewChip}>
-                  <Text style={styles.gotmPreviewChipText}>{t}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        }
+        ListFooterComponent={<View style={{ height: 16 }} />}
       />
     </View>
   );
@@ -736,7 +765,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${Colors.primary}18`,
   },
   rankNum: { fontFamily: "Inter_700Bold", fontSize: 13, width: 26, textAlign: "right", color: Colors.muted },
-  rankAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  rankAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", position: "relative" },
   rankAvatarText: { fontFamily: "Inter_700Bold", fontSize: 13, color: Colors.text },
   rankInfo: { flex: 1, gap: 2 },
   rankName: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: Colors.text },
@@ -804,4 +833,34 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   gotmPreviewChipText: { fontFamily: "Inter_500Medium", fontSize: 11, color: Colors.muted },
+  eloGainerTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+    color: Colors.text,
+    textAlign: "center",
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  podiumBadgeIcon: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rankBadgeIcon: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    backgroundColor: Colors.surface,
+    borderRadius: 7,
+    width: 14,
+    height: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

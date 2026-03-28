@@ -31,6 +31,7 @@ import {
   isEloPublic,
   getEloPercentile,
   CALIBRATION_GAMES,
+  getEloBadgeTier,
 } from "@/constants/mock";
 import { useAuth } from "@/context/AuthContext";
 import { useBallrData } from "@/context/BallrDataContext";
@@ -50,10 +51,11 @@ const AVG_ELO = Math.round(PLAYERS.reduce((s, p) => s + p.eloRating, 0) / PLAYER
 const RANGE_MIN = 600;
 const RANGE_MAX = 1800;
 
-function BigAvatar({ name, size = 90, imageUri }: { name: string; size?: number; imageUri?: string | null }) {
+function BigAvatar({ name, size = 90, imageUri, ringColor, showBadgeIcon }: { name: string; size?: number; imageUri?: string | null; ringColor?: string; showBadgeIcon?: string }) {
   const initials = name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+  const outerSize = size + 8;
   return (
-    <View style={[styles.bigAvatarOuter, { width: size + 8, height: size + 8, borderRadius: (size + 8) / 2 }]}>
+    <View style={[styles.bigAvatarOuter, { width: outerSize, height: outerSize, borderRadius: outerSize / 2 }, ringColor ? { borderColor: ringColor, borderWidth: 3 } : undefined]}>
       {imageUri ? (
         <Image
           source={{ uri: imageUri }}
@@ -64,6 +66,11 @@ function BigAvatar({ name, size = 90, imageUri }: { name: string; size?: number;
           <Text style={[styles.bigAvatarInitials, { fontSize: size * 0.36 }]}>{initials}</Text>
         </View>
       )}
+      {showBadgeIcon ? (
+        <View style={styles.badgeTierIcon}>
+          <Text style={{ fontSize: 14 }}>{showBadgeIcon}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -184,6 +191,7 @@ export default function ProfileScreen() {
   const reliabilityColor = getReliabilityColor(ME.reliabilityScore);
   const reliabilityLabel = getReliabilityLabel(ME.reliabilityScore);
   const calibrationGamesLeft = Math.max(0, CALIBRATION_GAMES - ME.gamesPlayed);
+  const badgeTier = getEloBadgeTier(ME, PLAYERS);
   const winRate = ME.gamesPlayed > 0 ? Math.round((ME.gamesWon / ME.gamesPlayed) * 100) : 0;
   const acceptedReviews = PROFILE_REVIEWS.filter((r) => r.status === "accepted");
   const pendingReviews = PROFILE_REVIEWS.filter((r) => r.status === "pending");
@@ -233,7 +241,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.avatarOverBanner}>
-          <BigAvatar name={ME.name} size={90} imageUri={localAvatarUri ?? ME.profileImageUrl} />
+          <BigAvatar name={ME.name} size={90} imageUri={localAvatarUri ?? ME.profileImageUrl} ringColor={badgeTier?.ringColor} showBadgeIcon={badgeTier?.icon} />
           <Pressable style={styles.cameraBtn} onPress={pickAvatar}>
             <Ionicons name="camera-outline" size={14} color={Colors.text} />
           </Pressable>
@@ -849,6 +857,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
+    position: "relative",
+  },
+  badgeTierIcon: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    backgroundColor: Colors.surface,
+    borderRadius: 11,
+    width: 22,
+    height: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   bigAvatarInner: { backgroundColor: Colors.primary, alignItems: "center", justifyContent: "center" },
   bigAvatarInitials: { fontFamily: "Inter_700Bold", color: Colors.text },

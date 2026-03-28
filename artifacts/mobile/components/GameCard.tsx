@@ -85,7 +85,7 @@ export function GameCard({ game, showJoinButton = false, isJoined = false }: Gam
               style={[
                 styles.fillBarFill,
                 {
-                  width: `${Math.min(fillPercent * 100, 100)}%` as any,
+                  width: `${Math.min(fillPercent * 100, 100)}%` as `${number}%`,
                   backgroundColor: fillBarColor,
                 },
               ]}

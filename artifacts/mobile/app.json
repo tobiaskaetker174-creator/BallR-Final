@@ -23,7 +23,8 @@
     },
     "web": {
       "favicon": "./assets/images/favicon.png",
-      "backgroundColor": "#141312"
+      "backgroundColor": "#141312",
+      "bundler": "metro"
     },
     "plugins": [
       [
