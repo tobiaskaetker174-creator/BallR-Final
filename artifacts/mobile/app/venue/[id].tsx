@@ -20,6 +20,7 @@ import {
   VENUES_LIST,
   VENUE_STATS,
   PLAYERS,
+  Venue,
   VenueStats,
   Game,
   formatGameTime,
@@ -29,13 +30,7 @@ import {
   getSurfaceIcon,
 } from "@/constants/mock";
 
-const VENUE_IMAGES: Record<string, string> = {
-  v1: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&h=400&fit=crop",
-  v2: "https://images.unsplash.com/photo-1556056504-5c7696c4c28d?w=800&h=400&fit=crop",
-  v3: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&h=400&fit=crop",
-  v4: "https://images.unsplash.com/photo-1624880357913-a8539238245b?w=800&h=400&fit=crop",
-  v5: "https://images.unsplash.com/photo-1518604666860-9ed391f76460?w=800&h=400&fit=crop",
-};
+/* Venue images — use venue.imageUrl from mock data, or fall back to these */
 
 const AMENITY_ICONS: Record<string, { icon: ComponentProps<typeof Ionicons>["name"]; label: string }> = {
   changing_rooms: { icon: "shirt-outline", label: "Changing Rooms" },
@@ -93,7 +88,32 @@ export default function VenueDetailScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const venue = VENUES_LIST.find((v) => v.id === id);
+  // Robust venue lookup: try by id, then by name, then construct from game data
+  const venue: Venue | null = (() => {
+    // 1. Direct ID match
+    const directMatch = VENUES_LIST.find((v) => v.id === id);
+    if (directMatch) return directMatch;
+
+    // 2. Try matching by name (in case id is actually a venue name)
+    const nameMatch = VENUES_LIST.find(
+      (v) => v.name.toLowerCase() === (id ?? "").toLowerCase()
+    );
+    if (nameMatch) return nameMatch;
+
+    // 3. Try to find venue from game data
+    const gameWithVenue = ALL_GAMES.find(
+      (g) => g.venue.id === id || g.venue.name.toLowerCase() === (id ?? "").toLowerCase()
+    );
+    if (gameWithVenue) {
+      // Check if the game's venue object matches a known venue
+      const knownVenue = VENUES_LIST.find((v) => v.id === gameWithVenue.venue.id);
+      if (knownVenue) return knownVenue;
+      // Otherwise return the venue embedded in the game
+      return gameWithVenue.venue;
+    }
+
+    return null;
+  })();
 
   if (!venue) {
     return (
@@ -153,9 +173,9 @@ export default function VenueDetailScreen() {
         contentContainerStyle={{ paddingBottom: bottomPadding + 24 }}
       >
         <View style={styles.hero}>
-          {VENUE_IMAGES[venue.id] ? (
+          {venue.imageUrl ? (
             <Image
-              source={{ uri: VENUE_IMAGES[venue.id] }}
+              source={{ uri: venue.imageUrl }}
               style={styles.heroImage}
               resizeMode="cover"
             />

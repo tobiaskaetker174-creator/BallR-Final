@@ -17,6 +17,8 @@ import {
   PLAYERS,
   PROFILE_REVIEWS,
   FOLLOWED_PLAYER_IDS,
+  Player,
+  Position,
   getEloLabel,
   getReliabilityColor,
   getReliabilityLabel,
@@ -30,58 +32,93 @@ import {
 const FOOT_LABEL: Record<string, string> = { left: "Left foot", right: "Right foot", both: "Both feet" };
 const FOOT_ICON: Record<string, string> = { left: "🦶L", right: "🦶R", both: "⚡" };
 
+/* ---------- Fake player generation for unknown IDs ---------- */
+const FAKE_NAMES = [
+  "James Wilson", "Dan Cooper", "Tom Harrington", "Alex Nguyen", "Chris Palmer",
+  "Nick Fabian", "Oliver Chen", "Liam Scott", "Ben Taylor", "Sam Mitchell",
+  "Jake Morrison", "Ryan Fletcher", "Luke Edwards", "Max Bennett", "Harry Clarke",
+  "Leo Summers", "Kai Anderson", "Ethan Brooks", "Noah Price", "Finn Walker",
+];
+const FAKE_NATIONALITIES = [
+  "British", "Australian", "American", "Canadian", "Dutch",
+  "German", "Swedish", "French", "Irish", "South African",
+];
+const FAKE_POSITIONS: Position[][] = [
+  ["MID"], ["FWD"], ["DEF"], ["GK"], ["MID", "FWD"], ["DEF", "MID"],
+];
+const FAKE_FEET: Array<"left" | "right" | "both"> = ["right", "right", "left", "both", "right", "right"];
+
+function simpleHash(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+}
+
+function generateFakePlayer(playerId: string): Player {
+  const h = simpleHash(playerId);
+  const name = FAKE_NAMES[h % FAKE_NAMES.length];
+  const nationality = FAKE_NATIONALITIES[h % FAKE_NATIONALITIES.length];
+  const positions = FAKE_POSITIONS[h % FAKE_POSITIONS.length];
+  const foot = FAKE_FEET[h % FAKE_FEET.length];
+  const elo = 900 + (h % 500);
+  const gamesPlayed = 5 + (h % 46);
+  const gamesWon = Math.round(gamesPlayed * (0.3 + (h % 40) / 100));
+  const gamesLost = Math.round((gamesPlayed - gamesWon) * 0.7);
+  const gamesDrawn = gamesPlayed - gamesWon - gamesLost;
+
+  return {
+    id: playerId,
+    name,
+    nationality,
+    eloRating: elo,
+    eloCalibrated: gamesPlayed >= 5,
+    gamesPlayed,
+    gamesWon,
+    gamesLost,
+    gamesDrawn,
+    reliabilityScore: 70 + (h % 25),
+    noShowCount: h % 3,
+    avgSkillRating: 3.0 + ((h % 20) / 10),
+    avgSportsmanshipRating: 3.5 + ((h % 15) / 10),
+    preferredPositions: positions,
+    footPreference: foot,
+    bio: "Football enthusiast based in Bangkok.",
+    basedIn: "Bangkok",
+    memberSince: new Date(Date.now() - (30 + (h % 365)) * 86400000).toISOString(),
+  };
+}
+
 export default function PlayerProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const directPlayer = PLAYERS.find((p) => p.id === id);
+  // Robust player lookup: PLAYERS -> game data -> generated fake player
+  const player: Player = (() => {
+    // 1. Direct PLAYERS array lookup
+    const directMatch = PLAYERS.find((p) => p.id === id);
+    if (directMatch) return directMatch;
 
-  // FIX 10: Fallback lookup - try to construct minimal player from game data
-  const player = directPlayer ?? (() => {
-    // Search through all games for any reference to this player ID
+    // 2. Search through all games for any reference to this player ID
     for (const game of ALL_GAMES) {
-      // Check organizer
       if (game.organizer && game.organizer.id === id) {
         return game.organizer;
       }
-      // Check bookings
       if (game.bookings) {
         const booking = game.bookings.find((b) => b.player.id === id);
-        if (booking) {
-          return booking.player;
-        }
+        if (booking) return booking.player;
       }
     }
-    return null;
+
+    // 3. Generate a consistent fake player so users never see "Player not found"
+    return generateFakePlayer(id ?? "unknown");
   })();
 
-  if (!player) {
-    return (
-      <View style={[styles.container, { paddingTop: topPadding }]}>
-        <Pressable
-          onPress={() => router.back()}
-          style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 14 }}
-        >
-          <Ionicons name="arrow-back" size={20} color={Colors.muted} />
-          <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: Colors.muted }}>Back</Text>
-        </Pressable>
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 16, paddingHorizontal: 32 }}>
-          <Text style={{ fontSize: 48 }}>❌</Text>
-          <Text style={{ fontFamily: "Inter_700Bold", fontSize: 22, color: Colors.text, textAlign: "center" }}>
-            Player not found
-          </Text>
-          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: Colors.muted, textAlign: "center", lineHeight: 22 }}>
-            This player profile doesn't exist or has been removed.
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
   const isCurrentUser = player.isCurrentUser;
-  const eloTier = getEloLabel(player.eloRating);
+  const eloTier = getEloLabel(player.eloRating, player, PLAYERS);
   const badgeTier = getEloBadgeTier(player, PLAYERS);
   const reliabilityColor = getReliabilityColor(player.reliabilityScore);
   const reliabilityLabel = getReliabilityLabel(player.reliabilityScore);

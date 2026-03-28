@@ -269,7 +269,7 @@ const VENUES: Venue[] = [
     capacity: 14,
     communityLink: "https://chat.whatsapp.com/benjakitti-bkk-fc",
     communityType: "whatsapp",
-    imageUrl: "https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&q=70",
+    imageUrl: "https://images.unsplash.com/photo-1624880357913-a8539238245b?w=800&q=70",
   },
   {
     id: "v2",
@@ -283,7 +283,7 @@ const VENUES: Venue[] = [
     capacity: 12,
     communityLink: "https://t.me/lumpini_football_bkk",
     communityType: "telegram",
-    imageUrl: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&q=70",
+    imageUrl: "https://images.unsplash.com/photo-1556056504-5c7696c4c28d?w=800&q=70",
   },
   {
     id: "v3",
@@ -297,7 +297,7 @@ const VENUES: Venue[] = [
     capacity: 16,
     communityLink: "https://chat.whatsapp.com/pitcharena-sukhumvit",
     communityType: "whatsapp",
-    imageUrl: "https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=800&q=70",
+    imageUrl: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&q=70",
   },
   {
     id: "v4",
@@ -311,7 +311,7 @@ const VENUES: Venue[] = [
     capacity: 10,
     communityLink: "https://t.me/flick_football_ekkamai",
     communityType: "telegram",
-    imageUrl: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&q=70",
+    imageUrl: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=70",
   },
   {
     id: "v5",
@@ -325,7 +325,7 @@ const VENUES: Venue[] = [
     capacity: 12,
     communityLink: "https://chat.whatsapp.com/seminyak-football-bali",
     communityType: "whatsapp",
-    imageUrl: "https://images.unsplash.com/photo-1551958219-acbc595a890c?w=800&q=70",
+    imageUrl: "https://images.unsplash.com/photo-1518604666860-9ed391f76460?w=800&q=70",
   },
 ];
 
@@ -1125,13 +1125,17 @@ export function getSkillLabel(level: SkillLevel): string {
   }
 }
 
-export function getEloLabel(elo: number): { label: string; tier: string; color: string } {
+export function getEloLabel(elo: number, player?: Player, allPlayers?: Player[]): { label: string; tier: string; color: string } {
+  if (player && allPlayers && allPlayers.length > 0) {
+    const badge = getEloBadgeTier(player, allPlayers);
+    if (badge) return { label: badge.label, tier: badge.icon, color: badge.ringColor };
+  }
   if (elo < 700) return { label: "Novice", tier: "⚽", color: "#8C8782" };
   if (elo < 900) return { label: "Beginner", tier: "🌱", color: "#A1D494" };
   if (elo < 1100) return { label: "Recreational", tier: "⚡", color: "#4ABFB0" };
   if (elo < 1300) return { label: "Competitive", tier: "🔥", color: "#E8A93A" };
   if (elo < 1500) return { label: "Expert", tier: "💎", color: "#5B8FE8" };
-  return { label: "Elite", tier: "👑", color: "#E05252" };
+  return { label: "Champion", tier: "👑", color: "#E8D5A3" };
 }
 
 export function getReliabilityColor(score: number): string {

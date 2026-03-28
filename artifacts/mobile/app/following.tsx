@@ -78,7 +78,7 @@ export default function FollowingScreen() {
         )}
 
         {followedPlayers.map((player) => {
-          const eloTier = getEloLabel(player.eloRating);
+          const eloTier = getEloLabel(player.eloRating, player, PLAYERS);
           const reliabilityColor = getReliabilityColor(player.reliabilityScore);
           const initials = player.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
           const activeGame = getActiveGame(player.id);

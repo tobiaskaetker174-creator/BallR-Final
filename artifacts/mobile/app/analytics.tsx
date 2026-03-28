@@ -48,7 +48,7 @@ export default function AnalyticsScreen() {
   const ME = user ?? PLAYERS[0];
 
   const winRate = ME.gamesPlayed > 0 ? Math.round((ME.gamesWon / ME.gamesPlayed) * 100) : 0;
-  const eloTier = getEloLabel(ME.eloRating);
+  const eloTier = getEloLabel(ME.eloRating, ME, PLAYERS);
 
   const otherPlayers = PLAYERS.filter((p) => !p.isCurrentUser);
   const rivalData = selectedRival

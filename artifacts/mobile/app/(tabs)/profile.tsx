@@ -103,9 +103,8 @@ function EloRangeVisual({
 }) {
   const pct = Math.max(0, Math.min(1, (currentElo - RANGE_MIN) / (RANGE_MAX - RANGE_MIN)));
   const avgPct = Math.max(0, Math.min(1, (AVG_ELO - RANGE_MIN) / (RANGE_MAX - RANGE_MIN)));
-  const mockPlayer = PLAYERS.find((p) => p.eloRating === currentElo) ?? PLAYERS[0];
-  const percentile = Math.round(getEloPercentile(mockPlayer, PLAYERS) * 100);
-  const topPct = 100 - percentile;
+  const playersBelow = PLAYERS.filter((p) => p.eloRating < currentElo).length;
+  const betterThanPct = PLAYERS.length > 1 ? Math.round((playersBelow / (PLAYERS.length - 1)) * 100) : 0;
   const aboveAvg = currentElo >= AVG_ELO;
 
   return (
@@ -133,7 +132,7 @@ function EloRangeVisual({
         <Text style={styles.eloRangeYouText}>
           {aboveAvg ? "▲" : "▼"} {currentElo} ELO · {aboveAvg ? "Above" : "Below"} average
         </Text>
-        <Text style={styles.eloRangePercent}>Your ELO is better than {100 - topPct}% of players</Text>
+        <Text style={styles.eloRangePercent}>Your ELO is better than {betterThanPct}% of players</Text>
       </View>
     </View>
   );
@@ -187,7 +186,7 @@ export default function ProfileScreen() {
   const activeEloHistory = liveEloHistory.length > 0 ? liveEloHistory : ELO_HISTORY;
 
   const eloPublic = isEloPublic(ME, PLAYERS);
-  const eloTier = getEloLabel(ME.eloRating);
+  const eloTier = getEloLabel(ME.eloRating, ME, PLAYERS);
   const reliabilityColor = getReliabilityColor(ME.reliabilityScore);
   const reliabilityLabel = getReliabilityLabel(ME.reliabilityScore);
   const calibrationGamesLeft = Math.max(0, CALIBRATION_GAMES - ME.gamesPlayed);

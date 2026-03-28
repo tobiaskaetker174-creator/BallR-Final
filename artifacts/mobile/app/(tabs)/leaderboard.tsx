@@ -313,31 +313,6 @@ export default function LeaderboardScreen() {
               <Text style={styles.monthTitle}>{rankMode === "botm" ? `${month} ${year}` : rankMode === "champion" ? `${month} ${year}` : rankMode === "gotm" ? `${month} ${year}` : "Rankings"}</Text>
             </View>
 
-            {rankMode === "champion" && (
-              <View style={styles.championInfoCard}>
-                <Text style={styles.championInfoTitle}>Monthly Fairness Award</Text>
-                <Text style={styles.championInfoDesc}>
-                  Players with the highest reliability & sportsmanship scores earn free game credits each month.
-                </Text>
-                <View style={styles.championRewards}>
-                  {[
-                    { rank: "🥇 1st Place", reward: "3 free games" },
-                    { rank: "🥈 2nd Place", reward: "2 free games" },
-                    { rank: "🥉 3rd Place", reward: "1 free game" },
-                    { rank: "Top 10% (≥95)", reward: "1 free game each" },
-                  ].map((r, i) => (
-                    <View key={i} style={styles.championRewardRow}>
-                      <Text style={styles.championRewardRank}>{r.rank}</Text>
-                      <View style={styles.championRewardChip}>
-                        <Ionicons name="gift-outline" size={11} color={Colors.amber} />
-                        <Text style={styles.championRewardText}>{r.reward}</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
             {rankMode === "elo" && (
               <View style={styles.eloPeriodRow}>
                 {([
@@ -454,8 +429,27 @@ export default function LeaderboardScreen() {
                   </View>
                 </View>
                 <Text style={styles.formulaNote}>
-                  Higher scores = Higher fairness ranking. Top 10 earns free game credits each month.
+                  Higher scores = Higher fairness ranking.
                 </Text>
+                <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: Colors.overlay, paddingTop: 12 }}>
+                  <Text style={[styles.formulaFactor, { marginBottom: 8 }]}>🎁 Monthly Rewards</Text>
+                  <View style={styles.championRewards}>
+                    {[
+                      { rank: "🥇 1st Place", reward: "3 free games" },
+                      { rank: "🥈 2nd Place", reward: "2 free games" },
+                      { rank: "🥉 3rd Place", reward: "1 free game" },
+                      { rank: "Top 10", reward: "1 free game each" },
+                    ].map((r, i) => (
+                      <View key={i} style={styles.championRewardRow}>
+                        <Text style={styles.championRewardRank}>{r.rank}</Text>
+                        <View style={styles.championRewardChip}>
+                          <Ionicons name="gift-outline" size={11} color={Colors.amber} />
+                          <Text style={styles.championRewardText}>{r.reward}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </View>
               </View>
             )}
 
