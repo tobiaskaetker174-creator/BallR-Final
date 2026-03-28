@@ -87,7 +87,7 @@ function MemberRow({ member }: { member: CrewMember }) {
       </View>
       <View style={styles.memberInfo}>
         <Text style={styles.memberName}>{member.playerName}</Text>
-        <Text style={styles.memberSub}>{member.crewElo} ELO · {member.gamesPlayed} game{member.gamesPlayed === 1 ? "" : "s"}</Text>
+        <Text style={styles.memberSub}>{member.crewElo} Crew ELO · {member.gamesPlayed} game{member.gamesPlayed === 1 ? "" : "s"}</Text>
       </View>
       <View style={[styles.roleBadge, { borderColor: roleInfo.color }]}>
         <Text style={[styles.roleBadgeText, { color: roleInfo.color }]}>{roleInfo.label}</Text>
@@ -289,6 +289,24 @@ export default function CrewDetailScreen() {
                     {completedGames.slice(0, 5).map((game) => (
                       <GameRow key={game.id} game={game} />
                     ))}
+                  </View>
+                )}
+
+                {/* Show all games if none matched upcoming/completed filters */}
+                {upcomingGames.length === 0 && completedGames.length === 0 && games.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>GAMES ({games.length})</Text>
+                    {games.slice(0, 5).map((game) => (
+                      <GameRow key={game.id} game={game} />
+                    ))}
+                  </View>
+                )}
+
+                {/* No games fallback */}
+                {games.length === 0 && (
+                  <View style={styles.emptySection}>
+                    <Ionicons name="football-outline" size={24} color={Colors.muted} />
+                    <Text style={styles.emptySectionText}>No crew games yet</Text>
                   </View>
                 )}
 

@@ -1,7 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { PLAYERS, Player } from "@/constants/mock";
 import { API_BASE } from "@/lib/supabase";
 import { transformPlayer } from "@/lib/ballrApi";
+
+const AUTH_STORAGE_KEY = "ballr_auth_user";
 
 interface AuthContextType {
   user: Player | null;
@@ -23,6 +26,29 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Player | null>(null);
+
+  // Restore persisted auth state on mount
+  useEffect(() => {
+    AsyncStorage.getItem(AUTH_STORAGE_KEY)
+      .then((stored) => {
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored) as Player;
+            setUser(parsed);
+          } catch {
+            AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Persist user whenever it changes
+  useEffect(() => {
+    if (user) {
+      AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user)).catch(() => {});
+    }
+  }, [user]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -66,7 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const logout = () => setUser(null);
+  const logout = () => {
+    setUser(null);
+    AsyncStorage.removeItem(AUTH_STORAGE_KEY).catch(() => {});
+  };
 
   const updateProfile = (updates: Partial<Player>) => {
     if (user) setUser({ ...user, ...updates });

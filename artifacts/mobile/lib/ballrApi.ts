@@ -296,7 +296,7 @@ export function transformCrewMember(m: Record<string, unknown>): CrewMember {
       undefined,
     role: ((m.role as string) ?? "member") as CrewRole,
     crewElo: (m.crew_elo as number) ?? (m.elo as number) ?? 1000,
-    gamesPlayed: (m.games_played as number) ?? (m.total_games as number) ?? (player.games_played as number) ?? (player.total_games as number) ?? 0,
+    gamesPlayed: (m.games_played as number) ?? (m.game_count as number) ?? (m.total_games as number) ?? (player.games_played as number) ?? (player.game_count as number) ?? (player.total_games as number) ?? 0,
     gamesWon: (m.games_won as number) ?? (m.wins as number) ?? (player.games_won as number) ?? (player.wins as number) ?? 0,
     joinedAt: (m.joined_at as string) ?? "",
   };
@@ -390,6 +390,16 @@ export async function fetchCrewGames(id: string): Promise<CrewGame[]> {
     const data = await apiFetch(`/crews/${id}/games`);
     const arr = Array.isArray(data) ? data : [];
     return arr.map(transformCrewGame);
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchPlayerCrews(playerId: string): Promise<Crew[]> {
+  try {
+    const data = await apiFetch(`/players/${playerId}/crews`);
+    const arr = Array.isArray(data) ? data : [];
+    return arr.map(transformCrew);
   } catch {
     return [];
   }

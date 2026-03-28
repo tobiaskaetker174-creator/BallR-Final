@@ -36,7 +36,7 @@ import {
 } from "@/constants/mock";
 import { useAuth } from "@/context/AuthContext";
 import { useBallrData } from "@/context/BallrDataContext";
-import { fetchCrews } from "@/lib/ballrApi";
+import { fetchCrews, fetchPlayerCrews } from "@/lib/ballrApi";
 import BallrLogo from "@/components/BallrLogo";
 
 const FOOT_LABEL: Record<string, string> = { left: "Left foot", right: "Right foot", both: "Both feet" };
@@ -99,15 +99,19 @@ function InfoRowItem({ label, value }: { label: string; value: string }) {
 function EloRangeVisual({
   currentElo,
   onInfoPress,
+  allPlayers,
 }: {
   currentElo: number;
   onInfoPress: () => void;
+  allPlayers?: import("@/constants/mock").Player[];
 }) {
+  const playerPool = allPlayers && allPlayers.length > 0 ? allPlayers : PLAYERS;
+  const avgElo = Math.round(playerPool.reduce((s, p) => s + p.eloRating, 0) / playerPool.length);
   const pct = Math.max(0, Math.min(1, (currentElo - RANGE_MIN) / (RANGE_MAX - RANGE_MIN)));
-  const avgPct = Math.max(0, Math.min(1, (AVG_ELO - RANGE_MIN) / (RANGE_MAX - RANGE_MIN)));
-  const playersBelow = PLAYERS.filter((p) => p.eloRating < currentElo).length;
-  const betterThanPct = PLAYERS.length > 1 ? Math.min(99, Math.max(0, Math.round((playersBelow / (PLAYERS.length - 1)) * 100))) : 0;
-  const aboveAvg = currentElo >= AVG_ELO;
+  const avgPct = Math.max(0, Math.min(1, (avgElo - RANGE_MIN) / (RANGE_MAX - RANGE_MIN)));
+  const playersBelow = playerPool.filter((p) => p.eloRating < currentElo).length;
+  const betterThanPct = playerPool.length > 1 ? Math.min(99, Math.max(0, Math.round((playersBelow / (playerPool.length - 1)) * 100))) : 0;
+  const aboveAvg = currentElo >= avgElo;
 
   return (
     <View style={styles.eloRangeCard}>
@@ -119,14 +123,14 @@ function EloRangeVisual({
       </View>
 
       <View style={styles.eloRangeBarOuter}>
-        <View style={[styles.eloRangeBarFill, { width: `${pct * 100}%` as any }]} />
-        <View style={[styles.eloAvgLine, { left: `${avgPct * 100}%` as any }]} />
-        <View style={[styles.eloRangeMarker, { left: `${Math.max(0, Math.min(96, pct * 100))}%` as any }]} />
+        <View style={[styles.eloRangeBarFill, { width: `${pct * 100}%` as `${number}%` }]} />
+        <View style={[styles.eloAvgLine, { left: `${avgPct * 100}%` as `${number}%` }]} />
+        <View style={[styles.eloRangeMarker, { left: `${Math.max(0, Math.min(96, pct * 100))}%` as `${number}%` }]} />
       </View>
 
       <View style={styles.eloRangeLabels}>
-        <View style={[styles.eloAvgLabelBox, { left: `${avgPct * 100}%` as any }]}>
-          <Text style={styles.eloAvgLabelText}>Avg {AVG_ELO}</Text>
+        <View style={[styles.eloAvgLabelBox, { left: `${avgPct * 100}%` as `${number}%` }]}>
+          <Text style={styles.eloAvgLabelText}>Avg {avgElo}</Text>
         </View>
       </View>
 
@@ -143,7 +147,7 @@ function EloRangeVisual({
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, isLoggedIn, logout, updateProfile } = useAuth();
-  const { currentPlayer, eloHistory: liveEloHistory, notifications: liveNotifications } = useBallrData();
+  const { currentPlayer, players: apiPlayers, eloHistory: liveEloHistory, notifications: liveNotifications } = useBallrData();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
   const ME = user ?? currentPlayer ?? PLAYERS[0];
@@ -158,8 +162,15 @@ export default function ProfileScreen() {
   const [myCrews, setMyCrews] = useState<Crew[]>([]);
 
   React.useEffect(() => {
-    fetchCrews().then((crews) => setMyCrews(crews.slice(0, 5))).catch(() => {});
-  }, []);
+    if (ME?.id) {
+      fetchPlayerCrews(ME.id)
+        .then((crews) => setMyCrews(crews.slice(0, 5)))
+        .catch(() => {
+          // Fallback: fetch all crews if player-specific endpoint fails
+          fetchCrews().then((crews) => setMyCrews(crews.slice(0, 5))).catch(() => {});
+        });
+    }
+  }, [ME?.id]);
 
   const pickAvatar = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -192,12 +203,13 @@ export default function ProfileScreen() {
   const unreadCount = activeNotifications.filter((n) => !n.read).length;
   const activeEloHistory = liveEloHistory.length > 0 ? liveEloHistory : ELO_HISTORY;
 
-  const eloPublic = isEloPublic(ME, PLAYERS);
-  const eloTier = getEloLabel(ME.eloRating, ME, PLAYERS);
+  const allPlayersForRanking = apiPlayers.length > 0 ? apiPlayers : PLAYERS;
+  const eloPublic = isEloPublic(ME, allPlayersForRanking);
+  const eloTier = getEloLabel(ME.eloRating, ME, allPlayersForRanking);
   const reliabilityColor = getReliabilityColor(ME.reliabilityScore);
   const reliabilityLabel = getReliabilityLabel(ME.reliabilityScore);
   const calibrationGamesLeft = Math.max(0, CALIBRATION_GAMES - ME.gamesPlayed);
-  const badgeTier = getEloBadgeTier(ME, PLAYERS);
+  const badgeTier = getEloBadgeTier(ME, allPlayersForRanking);
   const winRate = ME.gamesPlayed > 0 ? Math.round((ME.gamesWon / ME.gamesPlayed) * 100) : 0;
   const acceptedReviews = PROFILE_REVIEWS.filter((r) => r.status === "accepted");
   const pendingReviews = PROFILE_REVIEWS.filter((r) => r.status === "pending");
@@ -406,7 +418,7 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      <EloRangeVisual currentElo={ME.eloRating} onInfoPress={() => setShowEloInfo(true)} />
+      <EloRangeVisual currentElo={ME.eloRating} onInfoPress={() => setShowEloInfo(true)} allPlayers={allPlayersForRanking} />
 
       {ME.bio && (
         <View style={styles.section}>

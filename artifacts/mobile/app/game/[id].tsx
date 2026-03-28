@@ -148,7 +148,7 @@ function PaymentModal({
 export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { isLoggedIn } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const { games: liveGames } = useBallrData();
   const [isJoined, setIsJoined] = useState(MY_GAMES_IDS.has(id ?? ""));
   const [showPayment, setShowPayment] = useState(false);
@@ -278,7 +278,7 @@ export default function GameDetailScreen() {
             <Text style={styles.eloStripNum}>⚡ {computedMinElo}–{computedMaxElo} · Avg {computedAvgElo}</Text>
           </View>
           {(() => {
-            const myElo = PLAYERS[0].eloRating;
+            const myElo = user?.eloRating ?? PLAYERS[0].eloRating;
             const rangeSpan = computedMaxElo - computedMinElo || 1;
             const myMarkerPct = Math.max(2, Math.min(96, ((myElo - computedMinElo) / rangeSpan) * 100));
             const avgMarkerPct = Math.max(2, Math.min(96, ((computedAvgElo - computedMinElo) / rangeSpan) * 100));
@@ -320,7 +320,7 @@ export default function GameDetailScreen() {
 
         {(() => {
           const bookingPlayers = game.bookings.map((b) => b.player);
-          const myElo = PLAYERS[0].eloRating;
+          const myElo = user?.eloRating ?? PLAYERS[0].eloRating;
           const allElos = bookingPlayers.map((p) => p.eloRating);
           if (allElos.length === 0) return null;
           const minElo = Math.min(...allElos);
@@ -434,11 +434,14 @@ export default function GameDetailScreen() {
           </View>
         )}
 
-        {unassigned.length > 0 && (
+        {(() => {
+          const playersToShow = !game.teamsBalanced ? game.bookings : unassigned;
+          if (playersToShow.length === 0) return null;
+          return (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>PLAYERS ({unassigned.length})</Text>
+            <Text style={styles.sectionTitle}>BOOKED PLAYERS ({playersToShow.length})</Text>
             <View style={styles.playersList}>
-              {unassigned.map((b) => (
+              {playersToShow.map((b) => (
                 <Pressable
                   key={b.id}
                   style={styles.playerRow}
@@ -461,7 +464,8 @@ export default function GameDetailScreen() {
               ))}
             </View>
           </View>
-        )}
+          );
+        })()}
 
         {game.aiAssignmentCalculated && game.aiAssignment && (
           <View style={styles.section}>

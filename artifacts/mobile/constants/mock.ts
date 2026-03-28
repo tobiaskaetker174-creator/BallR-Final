@@ -1276,7 +1276,10 @@ export const VENUE_STATS: Record<string, VenueStats> = {
 
 export function formatPrice(price: number, cityId: string): string {
   if (!price) return "Free";
-  if (cityId === "bali") return `Rp${(price / 1000).toFixed(0)}k`;
+  if (cityId === "bali") {
+    if (price >= 1000) return `Rp${(price / 1000).toFixed(0)}k`;
+    return `Rp${price}`;
+  }
   return `฿${price}`;
 }
 
