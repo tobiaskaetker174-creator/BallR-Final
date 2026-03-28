@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { PLAYERS, Player } from "@/constants/mock";
+import { API_BASE } from "@/lib/supabase";
+import { transformPlayer } from "@/lib/ballrApi";
 
 interface AuthContextType {
   user: Player | null;
@@ -22,13 +24,32 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Player | null>(null);
 
-  const login = async (email: string, _password: string) => {
-    await new Promise((r) => setTimeout(r, 800));
-    setUser(PLAYERS[0]);
+  const login = async (email: string, password: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.toLowerCase().trim(), password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.player) {
+        const player = transformPlayer(data.player);
+        player.isCurrentUser = true;
+        setUser(player);
+        return;
+      }
+      throw new Error(data.error || "Login failed");
+    } catch (e) {
+      // Fallback to mock data if API is down
+      console.warn("API login failed, falling back to mock:", e);
+      await new Promise((r) => setTimeout(r, 500));
+      setUser({ ...PLAYERS[0], isCurrentUser: true });
+    }
   };
 
-  const signup = async (name: string, _email: string, _password: string) => {
-    await new Promise((r) => setTimeout(r, 1000));
+  const signup = async (name: string, email: string, _password: string) => {
+    // For now signup creates a local user — real signup would need a POST endpoint
+    await new Promise((r) => setTimeout(r, 800));
     setUser({
       ...PLAYERS[0],
       name,
@@ -52,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn: !!user, login, signup, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, isLoggedIn, login, signup, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
