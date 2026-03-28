@@ -2,8 +2,9 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { ComponentProps } from "react";
+import React, { ComponentProps, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Linking,
   Platform,
@@ -29,6 +30,7 @@ import {
   getSkillLabel,
   getSurfaceIcon,
 } from "@/constants/mock";
+import { fetchVenueById } from "@/lib/ballrApi";
 
 /* Venue images — use venue.imageUrl from mock data, or fall back to these */
 
@@ -88,8 +90,11 @@ export default function VenueDetailScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
+  const [apiVenue, setApiVenue] = useState<Venue | null>(null);
+  const [isLoadingApi, setIsLoadingApi] = useState(false);
+
   // Robust venue lookup: try by id, then by name, then construct from game data
-  const venue: Venue | null = (() => {
+  const localVenue: Venue | null = (() => {
     // 1. Direct ID match
     const directMatch = VENUES_LIST.find((v) => v.id === id);
     if (directMatch) return directMatch;
@@ -115,6 +120,18 @@ export default function VenueDetailScreen() {
     return null;
   })();
 
+  const venue = localVenue ?? apiVenue;
+
+  // Fetch from API if not found in local/mock data
+  useEffect(() => {
+    if (!localVenue && id && !apiVenue && !isLoadingApi) {
+      setIsLoadingApi(true);
+      fetchVenueById(id).then((v) => {
+        if (v) setApiVenue(v);
+      }).catch(() => {}).finally(() => setIsLoadingApi(false));
+    }
+  }, [id, localVenue]);
+
   if (!venue) {
     return (
       <View style={[styles.container, { paddingTop: topPadding }]}>
@@ -128,10 +145,16 @@ export default function VenueDetailScreen() {
           <Text style={styles.navTitle}>VENUE</Text>
           <View style={styles.navBtn} />
         </View>
-        <View style={styles.notFound}>
-          <Ionicons name="location-outline" size={40} color={Colors.muted} />
-          <Text style={styles.notFoundText}>Venue not found</Text>
-        </View>
+        {isLoadingApi ? (
+          <View style={styles.notFound}>
+            <ActivityIndicator size="large" color={Colors.accent} />
+          </View>
+        ) : (
+          <View style={styles.notFound}>
+            <Ionicons name="location-outline" size={40} color={Colors.muted} />
+            <Text style={styles.notFoundText}>Venue not found</Text>
+          </View>
+        )}
       </View>
     );
   }

@@ -2,7 +2,7 @@ import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { ComponentProps, useState } from "react";
+import React, { ComponentProps, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -30,6 +30,7 @@ import {
 } from "@/constants/mock";
 import { useAuth } from "@/context/AuthContext";
 import { useBallrData } from "@/context/BallrDataContext";
+import { fetchGameById } from "@/lib/ballrApi";
 
 const AMENITY_ICONS: Record<string, { icon: ComponentProps<typeof Ionicons>["name"]; label: string }> = {
   changing_rooms: { icon: "shirt-outline", label: "Changing Rooms" },
@@ -153,18 +154,36 @@ export default function GameDetailScreen() {
   const [showPayment, setShowPayment] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
+  const [apiGame, setApiGame] = useState<Game | null>(null);
+  const [isLoadingApi, setIsLoadingApi] = useState(false);
 
   const allGames = liveGames.length > 0 ? liveGames : ALL_GAMES;
-  const game = allGames.find((g) => g.id === id) ?? ALL_GAMES.find((g) => g.id === id);
+  const game = allGames.find((g) => g.id === id) ?? ALL_GAMES.find((g) => g.id === id) ?? apiGame;
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
+
+  // Fetch from API if not found in local data
+  useEffect(() => {
+    if (!game && id && !isLoadingApi) {
+      setIsLoadingApi(true);
+      fetchGameById(id).then((g) => {
+        if (g) setApiGame(g);
+      }).catch(() => {}).finally(() => setIsLoadingApi(false));
+    }
+  }, [id, game]);
 
   if (!game) {
     return (
       <View style={[styles.container, { paddingTop: topPadding }]}>
-        <View style={styles.notFound}>
-          <Text style={styles.notFoundText}>Game not found</Text>
-        </View>
+        {isLoadingApi ? (
+          <View style={styles.notFound}>
+            <ActivityIndicator size="large" color={Colors.accent} />
+          </View>
+        ) : (
+          <View style={styles.notFound}>
+            <Text style={styles.notFoundText}>Game not found</Text>
+          </View>
+        )}
       </View>
     );
   }

@@ -1,6 +1,6 @@
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   Platform,
@@ -28,6 +28,7 @@ import {
   getEloBadgeTier,
   ALL_GAMES,
 } from "@/constants/mock";
+import { fetchPlayerById } from "@/lib/ballrApi";
 
 const FOOT_LABEL: Record<string, string> = { left: "Left foot", right: "Right foot", both: "Both feet" };
 const FOOT_ICON: Record<string, string> = { left: "🦶L", right: "🦶R", both: "⚡" };
@@ -96,8 +97,10 @@ export default function PlayerProfileScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
-  // Robust player lookup: PLAYERS -> game data -> generated fake player
-  const player: Player = (() => {
+  const [apiPlayer, setApiPlayer] = useState<Player | null>(null);
+
+  // Robust player lookup: PLAYERS -> game data -> API -> generated fake player
+  const localPlayer: Player | null = (() => {
     // 1. Direct PLAYERS array lookup
     const directMatch = PLAYERS.find((p) => p.id === id);
     if (directMatch) return directMatch;
@@ -113,9 +116,20 @@ export default function PlayerProfileScreen() {
       }
     }
 
-    // 3. Generate a consistent fake player so users never see "Player not found"
-    return generateFakePlayer(id ?? "unknown");
+    return null;
   })();
+
+  // 3. Fetch from API if not found locally
+  useEffect(() => {
+    if (!localPlayer && id && !apiPlayer) {
+      fetchPlayerById(id).then((p) => {
+        if (p) setApiPlayer(p);
+      }).catch(() => {});
+    }
+  }, [id, localPlayer]);
+
+  // 4. Fall back to generated fake player so users never see "Player not found"
+  const player: Player = localPlayer ?? apiPlayer ?? generateFakePlayer(id ?? "unknown");
 
   const isCurrentUser = player.isCurrentUser;
   const eloTier = getEloLabel(player.eloRating, player, PLAYERS);

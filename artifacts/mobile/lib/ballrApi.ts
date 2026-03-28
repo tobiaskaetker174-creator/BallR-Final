@@ -65,17 +65,18 @@ export function transformPlayer(p: any): Player {
 
 export function transformVenue(v: any): Venue {
   return {
-    id: v.id,
-    name: v.name,
-    address: v.address,
-    cityId: CITY_ID_MAP[v.city_id] ?? "bangkok",
-    surfaceType: (v.surface_type ?? "turf") as SurfaceType,
+    id: v.id ?? "",
+    name: v.name ?? "Unknown Venue",
+    address: v.address ?? "",
+    cityId: CITY_ID_MAP[v.city_id] ?? v.cityId ?? "bangkok",
+    surfaceType: (v.surface_type ?? v.surfaceType ?? "turf") as SurfaceType,
     amenities: Array.isArray(v.amenities) ? v.amenities : [],
-    lat: Number(v.latitude) || 0,
-    lng: Number(v.longitude) || 0,
+    lat: Number(v.latitude ?? v.lat) || 0,
+    lng: Number(v.longitude ?? v.lng) || 0,
     capacity: v.capacity ?? undefined,
-    communityLink: v.community_link ?? undefined,
-    communityType: v.community_type ?? undefined,
+    imageUrl: v.image_url ?? v.imageUrl ?? undefined,
+    communityLink: v.community_link ?? v.communityLink ?? undefined,
+    communityType: v.community_type ?? v.communityType ?? undefined,
   };
 }
 
@@ -96,7 +97,7 @@ export function transformGame(g: any): Game {
   const gameTime = `${g.date}T${timeStr}:00`;
   return {
     id: g.id,
-    venue: transformVenue(g.venue),
+    venue: transformVenue(g.venue ?? {}),
     cityId: CITY_ID_MAP[g.city_id] ?? "bangkok",
     gameTime,
     durationMinutes: g.duration_minutes ?? 60,
@@ -225,6 +226,15 @@ export async function fetchLeaderboard(
   }
 }
 
+export async function fetchVenueById(id: string): Promise<Venue | null> {
+  try {
+    const data = await apiFetch(`/venues/${id}`);
+    return transformVenue(data);
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchCurrentPlayer(): Promise<Player | null> {
   return fetchPlayerById(MAYA_CHEN_ID);
 }
@@ -268,26 +278,37 @@ export function transformCrew(c: Record<string, unknown>): Crew {
 }
 
 export function transformCrewMember(m: Record<string, unknown>): CrewMember {
+  // API may return nested player data as m.player.name
+  const player = (m.player ?? {}) as Record<string, unknown>;
   return {
     id: (m.id as string) ?? "",
     crewId: (m.crew_id as string) ?? "",
-    playerId: (m.player_id as string) ?? "",
-    playerName: (m.player_name as string) ?? (m.name as string) ?? "Unknown",
-    profileImageUrl: (m.profile_image_url as string) ?? undefined,
+    playerId: (m.player_id as string) ?? (player.id as string) ?? "",
+    playerName:
+      (m.player_name as string) ??
+      (player.name as string) ??
+      (m.name as string) ??
+      "Unknown",
+    profileImageUrl:
+      (m.profile_image_url as string) ??
+      (player.profile_image_url as string) ??
+      undefined,
     role: ((m.role as string) ?? "member") as CrewRole,
     crewElo: (m.crew_elo as number) ?? 1000,
-    gamesPlayed: (m.games_played as number) ?? 0,
-    gamesWon: (m.games_won as number) ?? 0,
+    gamesPlayed: (m.games_played as number) ?? (player.games_played as number) ?? 0,
+    gamesWon: (m.games_won as number) ?? (player.games_won as number) ?? 0,
     joinedAt: (m.joined_at as string) ?? "",
   };
 }
 
 export function transformCrewGame(g: Record<string, unknown>): CrewGame {
+  // API may return nested venue data as g.venue.name
+  const venue = (g.venue ?? {}) as Record<string, unknown>;
   return {
     id: (g.id as string) ?? "",
     crewId: (g.crew_id as string) ?? "",
     gameId: (g.game_id as string) ?? (g.id as string) ?? "",
-    venueName: (g.venue_name as string) ?? "Unknown Venue",
+    venueName: (g.venue_name as string) ?? (venue.name as string) ?? "Unknown Venue",
     gameTime: (g.game_time as string) ?? (g.date as string) ?? "",
     status: ((g.status as string) ?? "upcoming") as GameStatus,
     playerCount: (g.player_count as number) ?? (g.current_players as number) ?? 0,
@@ -300,14 +321,23 @@ export function transformCrewLeaderboardEntry(
   e: Record<string, unknown>,
   idx: number
 ): CrewLeaderboardEntry {
+  // API may return nested player data as e.player.name
+  const player = (e.player ?? {}) as Record<string, unknown>;
   return {
     rank: (e.rank as number) ?? idx + 1,
-    playerId: (e.player_id as string) ?? "",
-    playerName: (e.player_name as string) ?? (e.name as string) ?? "Unknown",
-    profileImageUrl: (e.profile_image_url as string) ?? undefined,
+    playerId: (e.player_id as string) ?? (player.id as string) ?? "",
+    playerName:
+      (e.player_name as string) ??
+      (player.name as string) ??
+      (e.name as string) ??
+      "Unknown",
+    profileImageUrl:
+      (e.profile_image_url as string) ??
+      (player.profile_image_url as string) ??
+      undefined,
     crewElo: (e.crew_elo as number) ?? (e.elo as number) ?? 1000,
-    gamesPlayed: (e.games_played as number) ?? 0,
-    gamesWon: (e.games_won as number) ?? 0,
+    gamesPlayed: (e.games_played as number) ?? (player.games_played as number) ?? 0,
+    gamesWon: (e.games_won as number) ?? (player.games_won as number) ?? 0,
   };
 }
 

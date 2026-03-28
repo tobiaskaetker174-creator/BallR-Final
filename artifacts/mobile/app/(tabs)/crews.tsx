@@ -103,6 +103,7 @@ export default function CrewsScreen() {
 
   const [crews, setCrews] = useState<Crew[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     loadCrews();
@@ -111,10 +112,12 @@ export default function CrewsScreen() {
   const loadCrews = async () => {
     try {
       setIsLoading(true);
+      setHasError(false);
       const data = await fetchCrews();
-      setCrews(data);
+      setCrews(Array.isArray(data) ? data : []);
     } catch {
-      // silently fail
+      setHasError(true);
+      setCrews([]);
     } finally {
       setIsLoading(false);
     }
@@ -161,7 +164,21 @@ export default function CrewsScreen() {
               </View>
             )}
 
-            {!isLoading && crews.length === 0 && <EmptyState />}
+            {!isLoading && hasError && (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIconWrap}>
+                  <Ionicons name="cloud-offline-outline" size={48} color={Colors.muted} />
+                </View>
+                <Text style={styles.emptyTitle}>Could not load crews</Text>
+                <Text style={styles.emptySub}>Check your connection and try again.</Text>
+                <Pressable style={styles.emptyCreateBtn} onPress={loadCrews}>
+                  <Ionicons name="refresh-outline" size={16} color={Colors.base} />
+                  <Text style={styles.emptyCreateBtnText}>Retry</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {!isLoading && !hasError && crews.length === 0 && <EmptyState />}
           </>
         }
       />

@@ -106,7 +106,7 @@ function EloRangeVisual({
   const pct = Math.max(0, Math.min(1, (currentElo - RANGE_MIN) / (RANGE_MAX - RANGE_MIN)));
   const avgPct = Math.max(0, Math.min(1, (AVG_ELO - RANGE_MIN) / (RANGE_MAX - RANGE_MIN)));
   const playersBelow = PLAYERS.filter((p) => p.eloRating < currentElo).length;
-  const betterThanPct = PLAYERS.length > 1 ? Math.round((playersBelow / (PLAYERS.length - 1)) * 100) : 0;
+  const betterThanPct = PLAYERS.length > 1 ? Math.min(100, Math.max(0, Math.round((playersBelow / (PLAYERS.length - 1)) * 100))) : 0;
   const aboveAvg = currentElo >= AVG_ELO;
 
   return (
