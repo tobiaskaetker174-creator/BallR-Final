@@ -302,19 +302,23 @@ export function transformCrewMember(m: Record<string, unknown>): CrewMember {
   };
 }
 
-export function transformCrewGame(g: Record<string, unknown>): CrewGame {
-  // API may return nested venue data as g.venue.name
-  const venue = (g.venue ?? {}) as Record<string, unknown>;
+export function transformCrewGame(raw: Record<string, unknown>): CrewGame {
+  // API returns { id, game_id, crew_id, game: { id, date, start_time, venue: { name }, status, ... } }
+  const nested = (raw.game ?? {}) as Record<string, unknown>;
+  const g = { ...nested, ...raw }; // merge nested game data with top-level
+  const venue = (g.venue ?? nested.venue ?? {}) as Record<string, unknown>;
+  const timeStr = ((g.start_time as string) ?? "18:00:00").toString().substring(0, 5);
+  const gameDate = (g.date as string) ?? "";
   return {
-    id: (g.id as string) ?? "",
-    crewId: (g.crew_id as string) ?? "",
-    gameId: (g.game_id as string) ?? (g.id as string) ?? "",
-    venueName: (g.venue_name as string) ?? (venue.name as string) ?? "Unknown Venue",
-    gameTime: (g.game_time as string) ?? (g.date as string) ?? "",
-    status: ((g.status as string) ?? "upcoming") as GameStatus,
-    playerCount: (g.player_count as number) ?? (g.current_players as number) ?? 0,
-    maxPlayers: (g.max_players as number) ?? 12,
-    winningTeam: (g.winning_team as "blue" | "red" | "draw") ?? undefined,
+    id: (raw.id as string) ?? "",
+    crewId: (raw.crew_id as string) ?? "",
+    gameId: (raw.game_id as string) ?? (nested.id as string) ?? "",
+    venueName: (venue.name as string) ?? (g.venue_name as string) ?? "Unknown Venue",
+    gameTime: gameDate ? `${gameDate}T${timeStr}:00` : "",
+    status: ((nested.status as string) ?? (g.status as string) ?? "upcoming") as GameStatus,
+    playerCount: (nested.current_players as number) ?? (g.current_players as number) ?? 0,
+    maxPlayers: (nested.max_players as number) ?? (g.max_players as number) ?? 12,
+    winningTeam: (nested.winning_team as string) === "A" ? "blue" : (nested.winning_team as string) === "B" ? "red" : (nested.winning_team as string) === "draw" ? "draw" : undefined,
   };
 }
 

@@ -181,7 +181,17 @@ export default function GameDetailScreen() {
           </View>
         ) : (
           <View style={styles.notFound}>
+            <Pressable
+              onPress={() => router.back()}
+              style={({ pressed }) => [styles.navBtn, pressed && { opacity: 0.7 }]}
+            >
+              <Ionicons name="arrow-back" size={20} color={Colors.text} />
+            </Pressable>
+            <Ionicons name="football-outline" size={40} color={Colors.muted} style={{ marginTop: 40 }} />
             <Text style={styles.notFoundText}>Game not found</Text>
+            <Pressable onPress={() => router.push("/")} style={{ marginTop: 16, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: Colors.primary, borderRadius: 8 }}>
+              <Text style={{ color: Colors.text, fontFamily: "Inter_600SemiBold", fontSize: 14 }}>Back to Discover</Text>
+            </Pressable>
           </View>
         )}
       </View>

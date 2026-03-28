@@ -2,6 +2,7 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Modal,
   Platform,
   Pressable,
@@ -119,17 +120,29 @@ export default function PlayerProfileScreen() {
     return null;
   })();
 
+  const [apiDone, setApiDone] = useState(false);
+
   // 3. Fetch from API if not found locally
   useEffect(() => {
     if (!localPlayer && id && !apiPlayer) {
       fetchPlayerById(id).then((p) => {
         if (p) setApiPlayer(p);
-      }).catch(() => {});
+      }).catch(() => {}).finally(() => setApiDone(true));
+    } else {
+      setApiDone(true);
     }
   }, [id, localPlayer]);
 
-  // 4. Fall back to generated fake player so users never see "Player not found"
-  const player: Player = localPlayer ?? apiPlayer ?? generateFakePlayer(id ?? "unknown");
+  // 4. Show loading while API fetches, then fall back to fake player
+  const player: Player | null = localPlayer ?? apiPlayer ?? (apiDone ? generateFakePlayer(id ?? "unknown") : null);
+
+  if (!player) {
+    return (
+      <View style={[styles.container, { paddingTop: topPadding, alignItems: "center", justifyContent: "center" }]}>
+        <ActivityIndicator size="large" color={Colors.accent} />
+      </View>
+    );
+  }
 
   const isCurrentUser = player.isCurrentUser;
   const eloTier = getEloLabel(player.eloRating, player, PLAYERS);
