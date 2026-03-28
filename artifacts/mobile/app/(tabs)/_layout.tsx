@@ -27,6 +27,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "trophy", selected: "trophy.fill" }} />
         <Label>Rankings</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="crews">
+        <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
+        <Label>Crews</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
         <Label>Profile</Label>
@@ -118,6 +122,20 @@ function ClassicTabLayout() {
             ) : (
               <TabIcon focused={focused}>
                 <Ionicons name="trophy-outline" size={size} color={color} />
+              </TabIcon>
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="crews"
+        options={{
+          title: "Crews",
+          tabBarIcon: ({ color, size, focused }) =>
+            isIOS ? (
+              <SymbolView name="person.2" tintColor={color} size={size} />
+            ) : (
+              <TabIcon focused={focused}>
+                <Ionicons name={focused ? "people" : "people-outline"} size={size} color={color} />
               </TabIcon>
             ),
         }}

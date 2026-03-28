@@ -51,6 +51,9 @@ function RootLayoutNav() {
         <Stack.Screen name="carpool/[id]" options={{ headerShown: false, presentation: "card" }} />
         <Stack.Screen name="achievements" options={{ headerShown: false, presentation: "card" }} />
         <Stack.Screen name="venue/[id]" options={{ headerShown: false, presentation: "card" }} />
+        <Stack.Screen name="crew/[id]" options={{ headerShown: false, presentation: "card" }} />
+        <Stack.Screen name="crew/join" options={{ headerShown: false, presentation: "card" }} />
+        <Stack.Screen name="create-crew" options={{ headerShown: false, presentation: "modal" }} />
         <Stack.Screen name="following" options={{ headerShown: false, presentation: "card" }} />
         <Stack.Screen name="match-stats/[id]" options={{ headerShown: false, presentation: "card" }} />
         <Stack.Screen name="notification-settings" options={{ headerShown: false, presentation: "card" }} />

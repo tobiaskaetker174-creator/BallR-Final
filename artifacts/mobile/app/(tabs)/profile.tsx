@@ -24,6 +24,7 @@ import {
   WALLET_ENTRIES,
   WalletEntry,
   FOLLOWED_PLAYER_IDS,
+  Crew,
   getEloLabel,
   getReliabilityColor,
   getReliabilityLabel,
@@ -35,6 +36,7 @@ import {
 } from "@/constants/mock";
 import { useAuth } from "@/context/AuthContext";
 import { useBallrData } from "@/context/BallrDataContext";
+import { fetchCrews } from "@/lib/ballrApi";
 import BallrLogo from "@/components/BallrLogo";
 
 const FOOT_LABEL: Record<string, string> = { left: "Left foot", right: "Right foot", both: "Both feet" };
@@ -153,6 +155,11 @@ export default function ProfileScreen() {
   const [editFootPreference, setEditFootPreference] = useState<"left" | "right" | "both">(ME.footPreference ?? "right");
   const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
   const [localBannerUri, setLocalBannerUri] = useState<string | null>(null);
+  const [myCrews, setMyCrews] = useState<Crew[]>([]);
+
+  React.useEffect(() => {
+    fetchCrews().then((crews) => setMyCrews(crews.slice(0, 5))).catch(() => {});
+  }, []);
 
   const pickAvatar = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -295,6 +302,29 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={11} color={Colors.muted} />
         </Pressable>
       </View>
+
+      {myCrews.length > 0 && (
+        <View style={styles.myCrewsSection}>
+          <Text style={styles.myCrewsSectionTitle}>MY CREWS</Text>
+          {myCrews.map((crew) => (
+            <Pressable
+              key={crew.id}
+              style={styles.myCrewCard}
+              onPress={() => router.push({ pathname: "/crew/[id]", params: { id: crew.id } })}
+            >
+              <View style={[styles.myCrewColorDot, { backgroundColor: crew.primaryColor || Colors.primary }]} />
+              <View style={styles.myCrewInfo}>
+                <Text style={styles.myCrewName} numberOfLines={1}>{crew.name}</Text>
+                <Text style={styles.myCrewSub}>{crew.memberCount} members · {crew.gameCount} games</Text>
+              </View>
+              <View style={styles.myCrewElo}>
+                <Text style={styles.myCrewEloValue}>{crew.avgElo}</Text>
+                <Text style={styles.myCrewEloLabel}>ELO</Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      )}
 
       {ME.ballerScore !== undefined && (
         <View style={styles.ballerScoreCard}>
@@ -1352,5 +1382,59 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     fontSize: 12,
     color: Colors.muted,
+  },
+  myCrewsSection: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  myCrewsSectionTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    color: Colors.muted,
+    letterSpacing: 1.2,
+    marginBottom: 8,
+  },
+  myCrewCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.surface,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 6,
+    gap: 10,
+  },
+  myCrewColorDot: {
+    width: 8,
+    height: 32,
+    borderRadius: 4,
+  },
+  myCrewInfo: {
+    flex: 1,
+  },
+  myCrewName: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 14,
+    color: Colors.text,
+  },
+  myCrewSub: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    color: Colors.muted,
+    marginTop: 2,
+  },
+  myCrewElo: {
+    alignItems: "center",
+  },
+  myCrewEloValue: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+    color: Colors.accent,
+  },
+  myCrewEloLabel: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 9,
+    color: Colors.muted,
+    letterSpacing: 0.5,
   },
 });

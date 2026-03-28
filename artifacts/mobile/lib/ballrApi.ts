@@ -10,6 +10,11 @@ import {
   GameStatus,
   SurfaceType,
   NotificationType,
+  Crew,
+  CrewMember,
+  CrewGame,
+  CrewLeaderboardEntry,
+  CrewRole,
 } from "@/constants/mock";
 import { API_BASE, MAYA_CHEN_ID } from "./supabase";
 
@@ -241,5 +246,129 @@ export async function fetchEloHistory(playerId: string): Promise<EloHistoryEntry
     return arr.slice(0, 20).map(transformEloHistory);
   } catch {
     return [];
+  }
+}
+
+// ── Crew transforms ──────────────────────────────────────────────
+
+export function transformCrew(c: Record<string, unknown>): Crew {
+  return {
+    id: c.id as string,
+    name: (c.name as string) ?? "Unnamed Crew",
+    description: (c.description as string) ?? "",
+    primaryColor: (c.primary_color as string) ?? "#2D5A27",
+    inviteCode: (c.invite_code as string) ?? "",
+    isPrivate: (c.is_private as boolean) ?? false,
+    cityId: (c.city_id as string) ?? "",
+    createdAt: (c.created_at as string) ?? "",
+    memberCount: (c.member_count as number) ?? 0,
+    gameCount: (c.game_count as number) ?? 0,
+    avgElo: (c.avg_elo as number) ?? 1000,
+  };
+}
+
+export function transformCrewMember(m: Record<string, unknown>): CrewMember {
+  return {
+    id: (m.id as string) ?? "",
+    crewId: (m.crew_id as string) ?? "",
+    playerId: (m.player_id as string) ?? "",
+    playerName: (m.player_name as string) ?? (m.name as string) ?? "Unknown",
+    profileImageUrl: (m.profile_image_url as string) ?? undefined,
+    role: ((m.role as string) ?? "member") as CrewRole,
+    crewElo: (m.crew_elo as number) ?? 1000,
+    gamesPlayed: (m.games_played as number) ?? 0,
+    gamesWon: (m.games_won as number) ?? 0,
+    joinedAt: (m.joined_at as string) ?? "",
+  };
+}
+
+export function transformCrewGame(g: Record<string, unknown>): CrewGame {
+  return {
+    id: (g.id as string) ?? "",
+    crewId: (g.crew_id as string) ?? "",
+    gameId: (g.game_id as string) ?? (g.id as string) ?? "",
+    venueName: (g.venue_name as string) ?? "Unknown Venue",
+    gameTime: (g.game_time as string) ?? (g.date as string) ?? "",
+    status: ((g.status as string) ?? "upcoming") as GameStatus,
+    playerCount: (g.player_count as number) ?? (g.current_players as number) ?? 0,
+    maxPlayers: (g.max_players as number) ?? 12,
+    winningTeam: (g.winning_team as "blue" | "red" | "draw") ?? undefined,
+  };
+}
+
+export function transformCrewLeaderboardEntry(
+  e: Record<string, unknown>,
+  idx: number
+): CrewLeaderboardEntry {
+  return {
+    rank: (e.rank as number) ?? idx + 1,
+    playerId: (e.player_id as string) ?? "",
+    playerName: (e.player_name as string) ?? (e.name as string) ?? "Unknown",
+    profileImageUrl: (e.profile_image_url as string) ?? undefined,
+    crewElo: (e.crew_elo as number) ?? (e.elo as number) ?? 1000,
+    gamesPlayed: (e.games_played as number) ?? 0,
+    gamesWon: (e.games_won as number) ?? 0,
+  };
+}
+
+// ── Crew API fetchers ──────────────────────────────────────────
+
+export async function fetchCrews(): Promise<Crew[]> {
+  try {
+    const data = await apiFetch("/crews");
+    const arr = Array.isArray(data) ? data : [];
+    return arr.map(transformCrew);
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchCrewById(id: string): Promise<Crew | null> {
+  try {
+    const data = await apiFetch(`/crews/${id}`);
+    return transformCrew(data);
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchCrewMembers(id: string): Promise<CrewMember[]> {
+  try {
+    const data = await apiFetch(`/crews/${id}/members`);
+    const arr = Array.isArray(data) ? data : [];
+    return arr.map(transformCrewMember);
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchCrewLeaderboard(id: string): Promise<CrewLeaderboardEntry[]> {
+  try {
+    const data = await apiFetch(`/crews/${id}/leaderboard`);
+    const arr = Array.isArray(data) ? data : [];
+    return arr.map((e: Record<string, unknown>, i: number) =>
+      transformCrewLeaderboardEntry(e, i)
+    );
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchCrewGames(id: string): Promise<CrewGame[]> {
+  try {
+    const data = await apiFetch(`/crews/${id}/games`);
+    const arr = Array.isArray(data) ? data : [];
+    return arr.map(transformCrewGame);
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchCrewByInviteCode(code: string): Promise<Crew | null> {
+  try {
+    const data = await apiFetch(`/crews/join?code=${encodeURIComponent(code)}`);
+    return transformCrew(data);
+  } catch {
+    return null;
   }
 }

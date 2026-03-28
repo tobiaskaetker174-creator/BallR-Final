@@ -222,6 +222,57 @@ export interface ReferralEntry {
   creditEarned?: number;
 }
 
+export type CrewRole = "owner" | "admin" | "member";
+
+export interface Crew {
+  id: string;
+  name: string;
+  description: string;
+  primaryColor: string;
+  inviteCode: string;
+  isPrivate: boolean;
+  cityId: string;
+  createdAt: string;
+  memberCount: number;
+  gameCount: number;
+  avgElo: number;
+}
+
+export interface CrewMember {
+  id: string;
+  crewId: string;
+  playerId: string;
+  playerName: string;
+  profileImageUrl?: string;
+  role: CrewRole;
+  crewElo: number;
+  gamesPlayed: number;
+  gamesWon: number;
+  joinedAt: string;
+}
+
+export interface CrewGame {
+  id: string;
+  crewId: string;
+  gameId: string;
+  venueName: string;
+  gameTime: string;
+  status: GameStatus;
+  playerCount: number;
+  maxPlayers: number;
+  winningTeam?: "blue" | "red" | "draw";
+}
+
+export interface CrewLeaderboardEntry {
+  rank: number;
+  playerId: string;
+  playerName: string;
+  profileImageUrl?: string;
+  crewElo: number;
+  gamesPlayed: number;
+  gamesWon: number;
+}
+
 export const MY_REFERRAL_CODE = "MAYA-7X2K";
 export const MY_REFERRAL_CREDITS = 2;
 
