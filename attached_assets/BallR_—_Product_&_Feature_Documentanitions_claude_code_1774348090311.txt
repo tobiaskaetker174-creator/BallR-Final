@@ -1,0 +1,641 @@
+BallR — Product & Feature Documentation
+Version: Current (March 2026) | Stack: React Native + Expo Router + Supabase
+
+1. What Is BallR
+BallR is a mobile-first pickup football app for expat and local football communities in Southeast Asia. Players discover and book into organised 5v5–10v10 casual matches at local venues, build a persistent skill rating (ELO), compete in monthly city leaderboards, and earn rewards for top performance. The app targets Bangkok and Bali as its first two cities.
+
+Core value proposition:
+
+Find a game today, pay online, show up
+Build a real skill rating across dozens of games
+Know who your best teammates are
+Win the month → get free games + a t-shirt
+2. Tech Stack
+Layer	Technology
+Framework	React Native 0.83 via Expo SDK 55
+Navigation	Expo Router 55 (file-based, like Next.js)
+Backend	Supabase (Postgres + Auth + Realtime)
+State	React Context (AuthContext)
+Styling	React Native StyleSheet — no Tailwind
+Design system	"Iron & Moss" — deep charcoal + moss green
+Charts	Custom SVG-based EloChart component
+Icons	@expo/vector-icons (Ionicons)
+Date handling	date-fns
+Web deploy	expo export --platform web → Vercel (dist/)
+Dev data	MOCK_* constants — Supabase not yet live
+Supabase client (src/lib/supabase.ts): configured with EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY env vars, uses AsyncStorage for session persistence, detectSessionInUrl: false.
+
+3. Navigation Structure
+app/
+├── _layout.tsx                  ← Root Stack, StatusBar, AuthProvider
+├── (auth)/
+│   ├── _layout.tsx
+│   ├── login.tsx
+│   └── signup.tsx
+├── (tabs)/
+│   ├── _layout.tsx              ← Tab bar (Discover / Rankings / My Games / Profile)
+│   ├── index.tsx                ← Discover screen
+│   ├── leaderboard.tsx          ← Rankings screen
+│   ├── my-games.tsx             ← My Games screen
+│   └── profile.tsx              ← Profile screen
+├── game/
+│   ├── [id].tsx                 ← Game Detail (dynamic route)
+│   ├── chat.tsx                 ← Game Chat
+│   ├── create.tsx               ← Create Game (modal)
+│   ├── rate.tsx                 ← Rate Teammates (modal)
+│   └── result.tsx               ← Report Result (modal)
+├── potm/
+│   └── reward.tsx               ← Claim POTM Reward (modal)
+└── profile/
+    ├── edit.tsx                 ← Edit Profile (modal)
+    ├── settings.tsx             ← Settings
+    └── help.tsx                 ← Help & FAQ
+
+Auth is handled via AuthContext. If no session → redirect to (auth)/login. After login → (tabs).
+
+4. Data Models
+Player
+{
+  id, email, name, avatar_url, nationality, bio,
+  favorite_team, instagram_handle, whatsapp_number,
+  preferred_positions: ('GK'|'DEF'|'MID'|'FWD')[],
+  elo_rating: number,           // 500–2500, default ~1000
+  elo_calibrated: boolean,      // true after 10 games
+  games_played, games_won, games_lost, games_drawn,
+  reliability_score: number,    // 0–100
+  no_show_count: number,
+  avg_skill_rating: number,     // peer post-game 1–5 scale
+  avg_sportsmanship_rating: number,
+  total_ratings_received: number,
+  avg_community_quality_rating: number,     // community 1–10 scale
+  avg_community_sportsmanship_rating: number,
+  total_community_ratings: number,
+  preferred_city_id: string,
+  is_banned: boolean
+}
+
+Game
+{
+  id, organizer_id, venue_id, city_id,
+  game_time: ISO string,
+  duration_minutes: number,
+  max_players: number,           // e.g. 10, 12, 14
+  current_players: number,
+  price_per_player: number,
+  skill_level: 'beginner'|'intermediate'|'advanced'|'mixed',
+  registration_cutoff: ISO string,
+  teams_balanced: boolean,
+  status: 'upcoming'|'full'|'in_progress'|'completed'|'canceled',
+  winning_team: 'blue'|'red'|'draw'|null,
+  description: string|null,
+  // joined relations:
+  venue?: Venue, city?: City, organizer?: Player, bookings?: Booking[]
+}
+
+Booking
+{
+  id, game_id, player_id,
+  payment_status: 'pending'|'paid'|'refunded'|'failed',
+  payment_intent_id: string|null,
+  team_assignment: 'blue'|'red'|'none',
+  attended: boolean|null,
+  marked_no_show: boolean,
+  elo_before: number|null,
+  elo_after: number|null
+}
+
+Other models
+City: id, name, country, currency, currency_symbol, elo_50th_percentile, player_count
+Venue: id, city_id, name, address, lat/lng, surface_type (grass|turf|indoor), amenities[], photos[]
+PeerRating: game_id, rater_id, rated_id, skill_rating (1–5), sportsmanship_rating (1–5), comment
+EloHistory: player_id, game_id, elo_before, elo_after, change_amount, change_reason (win|loss|draw|no_show)
+PotmEntry: player_id, city_id, month, games_played, wins, avg_skill_rating, avg_sportsmanship, attendance_rate, potm_score, rank
+GameResult: game_id, reported_by, winning_team, status (pending_organizer|pending_vote|confirmed|disputed|finalized), votes_blue, votes_red, votes_draw
+ResultVote: game_id, player_id, vote (blue|red|draw)
+GamePass: player_id, passes_total, passes_used, expires_at, awarded_month
+CarpoolOffer: game_id, player_id, pickup_location, seats_available, departure_time, whatsapp_contact
+CarpoolRequest: game_id, player_id, pickup_location, seats_needed
+ShuttleBooking: game_id, pickup_location, departure_time, max_passengers, cost_per_person, passenger_ids[]
+AchievementBadge: id, title, description, icon, unlocked_at
+TshirtOrder: player_id, awarded_month, size (XS–XXL), shipping fields, status, tracking_number
+5. Feature Breakdown
+5.1 Authentication
+Login (app/(auth)/login.tsx)
+
+Email + password fields with icons
+Password visibility toggle
+"Continue with Google" button (UI stub)
+Calls AuthContext.login() → Supabase signInWithPassword
+On success: router.replace('/(tabs)')
+Hero design: large "BALLR" wordmark, "ENTER THE ARENA →" CTA
+Signup (app/(auth)/signup.tsx)
+
+Name, email, password fields
+Calls AuthContext.signup()
+On success: routes to tabs
+AuthContext (src/contexts/AuthContext.tsx)
+
+Wraps entire app
+Exposes: user, city, setCity, login(), signup(), logout()
+Auto-login via supabase.auth.getSession() on mount
+Listens to onAuthStateChange for session updates
+Currently uses a hardcoded mock user in development (not yet hitting live Supabase)
+5.2 Discover Screen (Home Tab)
+File: app/(tabs)/index.tsx
+
+The main game discovery feed.
+
+Header:
+
+"Discover" title
+Badge showing today's game count ("3 today")
+Calendar toggle button
++ button → navigates to Create Game modal
+City selector:
+
+Horizontal scrollable pill row
+Cities: Bangkok, Bali (from CITIES constant)
+Selecting a city filters all games to that city
+Stored in AuthContext.city / setCity()
+Calendar strip (collapsible):
+
+7-day horizontal strip starting from today (or a scrolled week)
+Left/right week navigation arrows
+Each day shows: 3-letter day name (MON/TUE etc.), day number, game count badge
+Tapping a day filters the game list to that date; tapping again deselects
+Today highlighted with accent border
+Selected day gets solid primary background
+Search bar:
+
+Filters games by venue name or description (case-insensitive substring match)
+Clear button (×) appears when text is entered
+Skill filter pills (horizontal scroll):
+
+All / 🌱 Beginner / ⚡ Intermediate / 🔥 Advanced / ⚽ Mixed
+Active pill gets solid primary green background
+Results counter:
+
+"N GAMES AVAILABLE" in uppercase muted label above list
+Game list (FlatList):
+
+Sorted by game time ascending
+Empty state with icon, message, and "Clear Filter" button when date is selected
+5.3 Game Card Component
+File: src/components/GameCard.tsx
+
+Used in Discover and My Games lists.
+
+Layout:
+
+Left 3px accent bar in skill level colour (Moss Glow for beginner, teal for intermediate, amber for advanced, purple for mixed)
+Venue name (bold, prominent)
+Date/time row: clock icon + "Today · 18:00" or "Tomorrow · 20:00" or "Mon, Mar 25 · 18:00", plus duration
+Skill chip (pill badge top-right) OR "FULL" red badge if full
+Stats row: people icon + "8/10" (current/max), location + surface type, price badge in green
+Fill bar: 3px progress track — green when normal, amber when >80% full, red when full
+"Only N spots left" label (shown when ≤4 spots left)
+Description text (italic, 1 line, muted) if present
+5.4 Game Detail Screen
+File: app/game/[id].tsx
+
+Full information screen for a single game, accessed from any game card.
+
+Sections:
+
+Header info:
+
+Venue name, address, surface type badge
+Game date/time, duration, skill level badge
+Organizer avatar + name
+Amenities list (changing rooms, showers, parking, lights, bar)
+Description
+Team ELO preview:
+
+Blue team average ELO vs Red team average ELO
+Win probability percentages for each team
+"Teams Balanced" badge if teams_balanced = true
+Booking / Join flow:
+
+If not joined and game is open: "Join Game" button with price
+If user has a Game Pass (GamePass with passes_left > 0): toggle "Use Game Pass (free)" option
+If already joined: "You're In ✓" confirmation
+If full: "Game Full" disabled state
+If registration cutoff passed: disabled state
+Joining sets payment_status: 'paid' and increments current_players
+Formation view (toggle):
+
+"Show Formation" / "Hide Formation" toggle button
+Renders FormationView component showing Blue Team vs Red Team
+Each team displayed as GK → DEF → MID → FWD rows
+Players shown as avatar + name + position + ELO + reasoning tooltip (e.g. "Preferred MID (1240 ELO)")
+Player lists (Blue / Red teams):
+
+Each booking rendered as PlayerRow: avatar, name, position badges, ELO, reliability dot
+Organizer can tap a player to open anonymous community rating modal (RatingModal)
+Result voting flow (post-game):
+
+After game time passes, a "Report Result" section appears
+Organizer sees a "Report Result" button → opens game/result.tsx modal
+Non-organizer participants see vote buttons if a result has been reported and is pending_vote
+Vote options: Blue Won / Draw / Red Won
+"Dispute" option opens a text input for dispute reason
+Vote counts shown as bars: "Blue 5 · Draw 1 · Red 2"
+After threshold of votes (majority), result auto-confirms and ELO changes are shown
+ELO change displayed: e.g. "+18 ELO" or "−12 ELO"
+Post-game rating:
+
+After game ends, participants can open the rate modal inline
+Tapping a teammate opens RatingModal for anonymous community rating (1–10 quality + sportsmanship)
+Carpool section (CarpoolSection component):
+
+Shows existing carpool offers for this game (driver, pickup location, seats, departure time, WhatsApp contact)
+Shows carpool requests (player needs a ride, pickup location, seats needed)
+"Offer a Ride" / "Request a Ride" buttons (UI scaffolded)
+Shuttle section (ShuttleSection component):
+
+If a shuttle exists for this game: shows pickup location, departure time, cost per person, passenger count
+"Book Shuttle" button (UI scaffolded)
+Chat button:
+
+Navigates to game/chat.tsx — in-game messaging
+5.5 Create Game Modal
+File: app/game/create.tsx
+
+Form for organizers to create a new game.
+
+Fields:
+
+Venue selector (dropdown from city's venues)
+Date picker
+Time picker
+Duration (60 / 90 / 120 min options)
+Max players (10 / 12 / 14)
+Price per player (number input)
+Skill level (Beginner / Intermediate / Advanced / Mixed)
+Registration cutoff (auto-set to 2h before game time, editable)
+Description (optional text area)
+Submit: Creates a Game record with status: 'upcoming', organizer_id: user.id, current_players: 0
+
+5.6 Game Chat
+File: app/game/chat.tsx
+
+Real-time chat for participants of a specific game.
+
+ChatMessage model: game_id, player_id (null for system), message, is_system
+System messages shown differently (italic, muted, centered) — e.g. "Alex joined the game"
+User messages: avatar + name + message bubble
+Input bar at bottom with send button
+Intended to use Supabase Realtime for live updates
+5.7 Rate Teammates Modal
+File: app/game/rate.tsx
+
+Post-game peer rating — appears after a game is completed.
+
+Lists all teammates (players on same team)
+For each: avatar, name, position
+Two sliders or star inputs: Skill (1–5) and Sportsmanship (1–5)
+Optional comment field
+Ratings are anonymous — stored as PeerRating records
+Affects avg_skill_rating and avg_sportsmanship_rating on the rated player
+One rating per rater per game per rated player
+5.8 Report Result Modal
+File: app/game/result.tsx
+
+Organizer-only modal to submit the game result.
+
+Options: Blue Won / Draw / Red Won
+Submits a GameResult with status: 'pending_vote'
+Players then vote in-game via the detail screen
+Voting threshold: majority of participants must agree
+On confirmation: GameResult.status → 'finalized', ELO changes applied
+5.9 Rankings Screen (POTM Leaderboard)
+File: app/(tabs)/leaderboard.tsx
+
+Monthly Player of the Month leaderboard, city-filtered.
+
+Header: "Rankings" title, city pill selector
+
+POTM Reward Banner: If logged-in user is rank #1 → green banner "You're #1 this month!" with tap → potm/reward.tsx modal
+
+Game Pass Banner: If user has active passes → shows remaining count
+
+Podium (top 3):
+
+3-column layout: 2nd (left) · 1st (center, elevated) · 3rd (right)
+1st place has "WINNER" green chip badge
+Avatar with rank bubble overlay (#1/#2/#3 in medal colour — gold/silver/bronze)
+Player name (uppercase bold)
+ELO in Moss Glow text below name
+Center card is taller with transform: translateY(-12) and slightly lighter background
+Stat cards (2-column row):
+
+GLOBAL LEADER: Shows top player's win rate + trend arrow icon + "X is on an N-game winning streak"
+ACTIVE ARENA: Shows cityPlayerCount × 12 as large hero number in Moss Glow, "Players competing this season"
+Competitor Roster:
+
+Title "Competitor Roster" + MONTHLY / ALL TIME toggle pills
+MONTHLY: ranked by potm_score
+ALL TIME: re-sorted by elo_rating descending
+Column headers: RANK · PLAYER · ELO RATING (uppercase muted)
+Each row: zero-padded rank number in Moss Glow (e.g. "04"), avatar, name + position tags (uppercase), ELO right-aligned
+"VIEW FULL LEADERBOARD →" text CTA at bottom
+
+Eligibility for leaderboard:
+A player appears only if shouldShowOnLeaderboard() returns true:
+
+elo_calibrated = true
+is_banned = false
+ELO above city 50th percentile (not "protected")
+City has ≥10 players (otherwise uses default threshold of 900)
+5.10 My Games Screen
+File: app/(tabs)/my-games.tsx
+
+Shows the logged-in user's game history.
+
+Tabs (segmented control):
+
+Upcoming: games where user has a paid booking OR is organizer, game time in future, not canceled
+Past: games in the past or completed
+Organized: all games where organizer_id = user.id
+Sort: Upcoming/Organized sorted ascending by game time; Past sorted descending (most recent first).
+
+Shows game count ("N MATCHES" label). Each game rendered as GameCard. Empty states have context-appropriate CTAs: "Browse Games →" for Upcoming, "Create Game →" for Organized.
+
+5.11 Profile Screen
+File: app/(tabs)/profile.tsx
+
+Header section:
+
+Large avatar (80px) with ELO badge overlay (🥇/🥈/🥉 for top 1%/10%/30% of city)
+Player name + tier badge pill (e.g. "🔥 Advanced")
+Nationality, favourite club
+Bio text
+Social links: Instagram handle + WhatsApp number (pill buttons)
+Preferred positions as Badge chips (GK / DEF / MID / FWD)
+"Edit Profile" button → profile/edit.tsx
+YOUR ELO RATING card:
+
+Hero number in Moss Glow (e.g. "1,085")
+Tier label below (e.g. "⚡ Intermediate")
+If calibrating (<10 games): hourglass + "Calibrating: 3/10 games" + progress bar
+If protected (ELO ≤ city median): "Casual ⚽" shown instead of number, with shield icon explanation
+Stats grid (4 boxes):
+
+Games / Wins / Win Rate / Reliability %
+Reliability coloured: green ≥90%, amber ≥70%, red <70%
+COMMUNITY RATINGS section (if total_community_ratings > 0):
+
+Two columns: ⚽ Quality X.X/10 · 🤝 Sportsmanship X.X/10
+"Based on N anonymous ratings"
+POST-GAME RATINGS section (if total_ratings_received > 0):
+
+⚽ Skill X.X/5 · 🤝 Sportsmanship X.X/5
+"Based on N game ratings"
+YOUR BEST TEAMMATE section:
+
+Calculated from all past bookings: finds the player with the highest win rate when on same team
+Shows: avatar, name, win rate pill, "N wins · N games together"
+Empty state if <1 shared game
+ACHIEVEMENTS section:
+
+Horizontal scroll of unlocked badge cards
+Tap any → MilestoneModal popup with icon + title + description
+ELO History chart (if shouldShowDetailedStats = true):
+
+EloChart component — SVG line chart of ELO over time from MOCK_ELO_HISTORY
+RELIABILITY section (if detailed stats visible):
+
+Green/amber/red dot + score% + label (Excellent/Good/Needs Improvement)
+No-show count if > 0
+Menu items:
+
+Settings → profile/settings.tsx
+Help & FAQ → profile/help.tsx
+Log Out
+5.12 Edit Profile Modal
+File: app/profile/edit.tsx
+
+Name, bio, nationality, favourite team
+Instagram handle, WhatsApp number
+Preferred positions (GK/DEF/MID/FWD multi-select toggle buttons)
+Avatar upload via expo-image-picker
+City preference selector
+Saves to Supabase players table
+5.13 Settings Screen
+File: app/profile/settings.tsx
+
+Notification preferences (UI toggles)
+Privacy settings (show/hide ELO, show/hide stats)
+Account management (change password, delete account)
+App version display
+5.14 Help & FAQ Screen
+File: app/profile/help.tsx
+
+Static FAQ accordion
+Contact support option
+Community rules / fair play guidelines
+5.15 POTM Reward Modal
+File: app/potm/reward.tsx
+
+Triggered when rank #1 player taps the reward banner.
+
+Reward contents:
+
+3 free game passes (stored as GamePass with passes_total: 3, passes_used: 0)
+BallR t-shirt (triggers a TshirtOrder form: size selector XS–XXL, shipping name, address, city)
+Confirmation screen with order reference
+6. Core Business Logic
+6.1 ELO Rating System
+File: src/lib/elo.ts
+
+Standard Elo with K-factor = 32, range 500–2500.
+
+Expected score  = 1 / (1 + 10^((opponentElo - playerElo) / 400))
+ELO change      = round(32 × (actual − expected))
+  actual: win=1.0, draw=0.5, loss=0.0
+
+No-show penalty: −50 ELO (floored at 500).
+
+Team balancing algorithm (balanceTeams):
+
+Sort all players by ELO descending
+Snake draft: rounds alternate Blue-then-Red, Red-then-Blue
+Up to 5 swap-improvement passes: try every Blue↔Red swap, keep if it reduces |avgBlue − avgRed|
+ELO tiers (getEloTier):
+
+Range	Tier	Icon
+≥1500	Elite	👑
+≥1300	Expert	💎
+≥1100	Advanced	🔥
+≥900	Intermediate	⚡
+≥700	Beginner	🌱
+<700	Novice	⚽
+Win probability: round(expectedScore(teamA, teamB) × 100) — displayed on game detail screen.
+
+6.2 Dignity / Rating Protection System
+File: src/lib/dignity.ts
+
+Prevents discouraging new/weak players by hiding their exact ELO.
+
+Rules:
+
+Calibrating: games_played < 10 → show "Casual ⚽" instead of ELO
+Protected: ELO ≤ city's 50th percentile (only if city has ≥10 players; otherwise threshold = 900) → show "Casual ⚽"
+Detailed stats visible: only if NOT protected
+Leaderboard visible: NOT protected AND NOT banned AND elo_calibrated = true
+This means roughly the bottom ~50% of players in each city never see a number — just "Casual ⚽". This is intentional to keep the community friendly.
+
+6.3 Player of the Month Scoring
+File: src/lib/potm.ts
+
+POTM score is a weighted composite (0–100):
+
+Component	Weight	Input
+Win Rate	35%	wins / gamesPlayed × 100
+ELO	25%	normalised from 800–1400 range → 0–100
+Peer Skill Rating	10%	normalised 1–5 → 0–100
+Peer Sportsmanship	10%	normalised 1–5 → 0–100
+Community Quality	7%	normalised 1–10 → 0–100 (default 50 if none)
+Community Sportsmanship	3%	same
+Reliability	10%	reliability_score (already 0–100)
+Eligibility thresholds:
+
+Minimum 5 games played (POTM_MIN_GAMES = 5)
+Minimum 3 peer ratings received (POTM_MIN_RATINGS = 3)
+Minimum 70% reliability score (POTM_MIN_RELIABILITY = 70)
+Top 10 shown (POTM_TOP_N = 10)
+Must pass shouldShowOnLeaderboard() (see Dignity system)
+6.4 ELO Badge Tiers
+File: src/lib/badges.ts
+
+Badge assigned relative to all other players in the same city:
+
+Percentile (from top)	Badge	Colour
+Top 1%	🥇 Gold	#FFD700
+Top 10%	🥈 Silver	#C0C0C0
+Top 30%	🥉 Bronze	#CD7F32
+Below 30%	—	none
+Requires ≥3 players in city to assign any badge. Used on Profile header and in leaderboard rows.
+
+6.5 Achievement Milestones
+File: src/lib/milestones.ts
+
+12 achievements checked client-side against current player stats:
+
+ID	Title	Trigger
+first_game	First Game! 🎉	games_played ≥ 1
+games_10	Regular Player 🎊	games_played ≥ 10
+games_50	Veteran 🏆	games_played ≥ 50
+games_100	Legend ⭐	games_played ≥ 100
+first_win	First Win 🥇	games_won ≥ 1
+wins_10	Ten Wins 🔥	games_won ≥ 10
+wins_50	Fifty Wins 💪	games_won ≥ 50
+elo_1200	Intermediate 📈	elo_rating ≥ 1200
+elo_1400	Advanced 🚀	elo_rating ≥ 1400
+elo_1600	Elite 💎	elo_rating ≥ 1600
+ratings_10	Community Star ⭐	total_ratings_received ≥ 10
+reliable_100	Perfect Attendance 🎯	reliability_score ≥ 100
+getNewlyUnlocked(before, after) detects newly unlocked achievements after a stat change → triggers MilestoneModal celebration popup.
+
+6.6 Formation Assignment
+File: src/lib/formation.ts
+
+Assigns players to positions on each team for the visual formation display.
+
+Player score = elo_rating + (avg_community_quality_rating ?? avg_skill_rating ?? 3) × 50
+
+Algorithm:
+
+Fill GK slot first — highest-scoring preferred GK player
+Fill DEF → MID → FWD in order, preferring players with matching preferred_positions, falling back to highest-scoring available
+Leftover players appended to FWD
+Formation scales with team size:
+
+Players	DEF	MID	FWD
+5	2	2	1
+6	2	2	2
+8	3	3	2
+10	3	3	3
+Each assigned player has a reasoning string (e.g. "Preferred MID (1240 ELO)" or "Flexible – assigned DEF (980 ELO)") shown in the UI.
+
+7. Reusable Components
+Component	Description
+Avatar	Circular avatar — shows image if url present, otherwise 2-letter initials on earthy green background
+Badge	Small pill label with custom color + backgroundColor, optional small prop
+Button	4 variants: primary (Woody Green), secondary (surfaceLight), danger (red), ghost (transparent). Supports loading (ActivityIndicator), disabled, fullWidth
+PlayerRow	Player list item: avatar + name + position badges + ELO + reliability dot
+GameCard	Full game listing card (see §5.3)
+EloChart	SVG line chart of ELO history, colour-coded line segments (green/red per game)
+EloBadge	Shows 🥇/🥈/🥉 badge with coloured border overlay
+FormationView	Two-column team formation: GK→DEF→MID→FWD rows, Blue vs Red colour coding
+CarpoolSection	Lists carpool offers + requests for a game, "Offer / Request" buttons
+ShuttleSection	Shuttle info card + "Book Shuttle" CTA
+StarRating	1–5 star tap input (used in rate screen)
+MilestoneModal	Full-screen celebration overlay for newly unlocked achievements
+RatingModal	Anonymous community rating (1–10 quality + sportsmanship) triggered from game detail or profile
+8. Design System — "Iron & Moss"
+File: src/lib/theme.ts
+
+Colours
+Token	Hex	Usage
+background	#141312	App background (Deep Charcoal)
+surface	#201F1E	Cards, containers
+surfaceLight	#363433	Hover states, tertiary backgrounds
+primary	#2D5A27	Buttons, active states (Woody Green)
+primaryDark	#1E3D1A	Pressed state
+accent	#A1D494	ELO numbers, stats, icons (Moss Glow)
+text	#E6E2DF	Primary text (Earthy Parchment)
+textSecondary	#8C8782	Secondary labels
+textMuted	#8C8782	Metadata, placeholders
+border	#42493E	Dividers (used at 15–30% opacity)
+error	#EF4444	Errors, FULL badge
+warning	#F59E0B	Advanced badge, near-full bar
+teamBlue	#3B82F6	Blue team
+teamRed	#EF4444	Red team
+casual	#8B5CF6	Mixed skill games
+star	#FBBF24	Star ratings
+Typography scale
+Token	Size	Usage
+xs	11px	Tiny labels
+sm	13px	Secondary text
+md	16px	Body text
+lg	20px	Card subtitles
+xl	24px	Section headers
+xxl	32px	Screen titles
+hero	48px	ELO display
+Spacing (8px grid)
+xs:4 sm:8 md:16 lg:24 xl:32 xxl:48
+
+Border radius
+sm:8 md:12 lg:16 xl:24 full:999
+
+Tab bar
+Active tab: solid Woody Green capsule background (tabBarActiveBackgroundColor: colors.primary, borderRadius: 12). Inactive: icon + label in muted. Labels uppercase, 9px, weight 700.
+
+9. Current Cities & Venues (Mock Data)
+Bangkok (city-bkk)
+Currency: THB (฿), ELO 50th percentile: 1060, 87 players
+Benjakitti Park Field — turf, amenities: changing rooms, showers, parking, lights
+The Pitch BKK — turf, amenities: changing rooms, showers, bar, lights
+Lumpini Stadium Pitch — grass, amenities: parking, lights
+Bali (city-bali)
+Currency: USD ($), ELO 50th percentile: 980, 34 players
+Canggu Football Center — grass, amenities: changing rooms, parking
+10. Known Gaps / Not Yet Implemented
+Supabase not live — all data is mock constants in src/lib/mock-data.ts
+Payments — payment_intent_id field exists but Stripe/payment provider not integrated
+Push notifications — notification preferences exist in settings UI but no push service connected
+Google Sign-In — button exists on login screen, handler not implemented
+Carpool/Shuttle booking — UI scaffolded, write operations not implemented
+Result voting threshold — vote tallying logic in UI but no server-side enforcement
+ELO write-back — ELO changes displayed post-game but not persisted (mock only)
+Chat realtime — Supabase Realtime subscription not yet wired up
+T-shirt order fulfillment — form exists, no backend order processing
+Map/location view — lat/lng stored on venues but no map component yet
+11. File Count & Scale
+Category	Count
+Screens	14
+Reusable components	13
+Business logic libs	7
+TypeScript interfaces	18
+Total source files

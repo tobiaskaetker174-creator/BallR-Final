@@ -1,0 +1,25 @@
+Gesamte Transkription:
+
+Die optimale Aufstellung sollte visuell auf einem Spielfeld dargestellt werden. Dabei wird das Feld horizontal ausgerichtet, sodass eine Mannschaft links und die andere rechts positioniert ist. Für jede Mannschaft soll klar ersichtlich sein, welcher Spieler welche Position auf dem Feld einnimmt.
+
+Zusätzlich sollen Informationen zur Spielprognose integriert werden. Dazu gehört die Anzeige, welches Team als Favorit gilt sowie die jeweiligen Betting-Odds für beide Teams.
+
+Das Elo-System ist aktuell noch nicht korrekt umgesetzt. Insbesondere fehlt die visuelle Darstellung, bei der ein Spieler seinen eigenen Elo-Wert zentral auf einer Skala sehen kann. Der eigene Punkt auf der Elo-Skala ist derzeit nicht sichtbar und sollte klar hervorgehoben in der Mitte positioniert werden.
+
+Die Elo-Skala soll so umgesetzt werden, dass der Spieler seinen eigenen Punkt klar sichtbar darauf erkennen kann.
+
+Zusätzlich fehlen weiterhin die visuellen Indikatoren für Rankings in den Aufstellungen. Es sollen kleine Icons für Gold, Silber und Bronze angezeigt werden, sodass direkt ersichtlich ist, welcher Spieler welches Ranking hat.
+
+Die Darstellung von Standorten wie Bali und Bangkok im Bereich „Ball of the Month“ ist aktuell zu prominent. Wenn sich ein Spieler bereits in Bangkok befindet, sollte Bangkok nicht doppelt angezeigt werden und es sollte nicht notwendig sein, aktiv zwischen Bangkok und Bali zu wählen. Die Standortlogik soll entsprechend vereinfacht und kontextabhängig angepasst werden.
+
+Der Bereich „Edit Profile“ im Profil funktioniert derzeit nicht und muss vollständig funktionsfähig gemacht werden.
+
+Die App hat zwei unterschiedliche Scores: einmal den Elo-Score und einmal den Ballr-Score (B-A-L-L-R-Score). Es soll klar in der gesamten App sichtbar sein, welcher Score jeweils gemeint ist, sodass keine Verwechslung entsteht.
+
+Im Bereich Analytics soll zusätzlich angezeigt werden, gegen welchen Gegner der Spieler die niedrigste Siegesrate hat, also gegen wen er am häufigsten verliert.
+
+Die „Your Elo Position“-Anzeige soll nicht die niedrigste oder höchste Elo-Zahl anzeigen. Stattdessen soll sie nur einen Balken darstellen, auf dem ersichtlich ist, wo der Durchschnitt liegt und wo der Spieler selbst positioniert ist.
+
+Diese Elo-Position soll zusätzlich auch im Profil sichtbar sein, jedoch nur privat. Im Profil wird sie im Vergleich zu allen Spielern berechnet, die in der App registriert sind.
+
+Bei einzelnen Spielen (vor dem Spiel, während der Anmeldung, während der Teilnahme sowie bei vergangenen Spielen) soll ebenfalls eine entsprechende Anzeige vorhanden sein. In diesem Fall wird die Elo-Position jedoch nur im Vergleich zu den Spielern berechnet, die für dieses konkrete Spiel angemeldet sind. Dabei soll der Durchschnitt dieser Spieler angezeigt werden sowie die Position des Nutzers relativ zu dieser Gruppe, inklusive einer prozentualen Einordnung (wie viele Spieler besser bzw. schlechter sind basierend auf dem Elo-Wert).

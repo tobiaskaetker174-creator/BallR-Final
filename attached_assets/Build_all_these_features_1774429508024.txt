@@ -1,0 +1,47 @@
+
+
+The optimal lineup should be visually displayed on a field. The field should be oriented horizontally, with one team on the left and the other on the right. It should clearly show which player is positioned where on the field.
+
+In addition, match prediction information should be included. This includes displaying which team is the favorite and the respective betting odds for both teams.
+
+The Elo system is still not correctly implemented. In particular, the visual representation is missing where a player can see their own Elo value centered on a scale. The player’s point on the Elo scale is currently not visible and should be clearly highlighted in the center.
+
+The Elo scale should be implemented so that the player can clearly see their own point on it.
+
+For the Elo score, the user should be able to see their position relative to all players. Their point should be somewhere in the middle of the Elo range, representing where they stand on average.
+
+The Elo range of individual players should remain anonymous if they are in the bottom 30% of players.
+
+Players in the bottom 30% should only be able to see their own Elo score privately. The idea is to prevent identifying who the worst player in the app is. Only players above the 30% threshold (i.e., those with an Elo score better than 30% of users) should have their Elo visible to others.
+
+Players below the 30% threshold should only see their Elo score privately.
+
+The “Your Elo Position” feature should not display the lowest or highest Elo values. Instead, it should only show a bar indicating where the average lies and where the player is positioned.
+
+This Elo position should also be visible in the profile, but only privately. In the profile, it should be calculated relative to all players registered in the app.
+
+For individual matches (before the match, during sign-up, during participation, and for past matches), a similar display should also be available. In this case, the Elo position should be calculated only relative to the players registered for that specific match. It should show the average of those players and the user’s position relative to that group, including a percentage breakdown (how many players are better or worse based on Elo).
+
+Visual indicators for rankings in the lineups are still missing. Small icons for gold, silver, and bronze should be displayed so it is immediately clear which player has which ranking.
+
+Based on the most popular positions of the players, the AI should calculate where each player performs best and use that to generate the optimal lineup.
+
+The user should be able to view this via a button labeled “optimal lineup.”
+
+The current button labeled something like “View AI Teams” should instead be renamed to something like “View Lineup.”
+
+There should also be an explanation added: what Elo is and how it is calculated.
+
+The display of locations like Bali and Bangkok in the “Ball of the Month” section is currently too prominent. If a player is already in Bangkok, it should not be shown twice, and it should not be necessary to manually choose between Bangkok and Bali. The location logic should be simplified and made context-aware.
+
+The city (e.g., Bangkok or Bali) should be set in the settings, rather than being overly prominent throughout the app. Alternatively, the selection should be made less prominent so it is not displayed everywhere.
+
+The “Edit Profile” section in the profile is currently not working and needs to be fully functional.
+
+The app has two different scores: the Elo Score and the Ballr Score (B-A-L-L-R Score). It should be clearly visible throughout the app which score is being referenced to avoid confusion.
+
+In the Analytics section, it should also be shown which opponent the player has the lowest win rate against, i.e., the opponent they lose to most often.
+
+There should be a feature to define a rival (this is currently missing), and in Analytics, the user should be able to see their win percentage specifically against that rival.
+
+The calibration period should be reduced to five matches instead of ten.

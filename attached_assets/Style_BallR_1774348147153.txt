@@ -1,0 +1,59 @@
+# Design System Document: "Iron & Moss"
+
+## 1. Overview & Creative North Star: "The Earthbound Arena"
+This design system rejects the sterile, neon-drenched aesthetics of typical sports apps in favor of a grounded, premium, and organic feel. It is inspired by the intersection of industrial strength ("Iron") and natural resilience ("Moss"). The objective is to create a high-contrast, immersive environment that feels like a night match under professional floodlights on a perfectly maintained pitch.
+
+---
+
+## 2. Color Palette (High-Contrast Earthy)
+
+### Core Backgrounds
+- **Base (Deep Charcoal):** `#141312` - A warm, near-black that provides more depth than a standard neutral black. Used for the primary app background.
+- **Surface (Iron):** `#201F1E` - A slightly lighter, metallic charcoal for cards, containers, and elevated sections.
+- **Overlay/Hover:** `#363433` - Used for subtle state changes or tertiary background elements.
+
+### The "Moss" Accents (Primary & Secondary)
+- **Primary (Woody Green):** `#2D5A27` - A deep, forest-inspired green used for high-impact buttons and active states.
+- **Secondary (Moss Glow):** `#A1D494` - A vibrant, desaturated lime-green used for typography, statistics, and critical UI indicators (e.g., Elo ratings, success icons).
+
+### Supporting Colors
+- **Text (Earthy Parchment):** `#E6E2DF` - A soft, high-contrast off-white that reduces eye strain compared to pure white.
+- **Text (Muted Clay):** `#8C8782` - A warm gray for secondary labels and metadata.
+- **Separation:** `#42493E` (20% Opacity) - Subtle borders and dividers.
+
+---
+
+## 3. Typography: "The Kinetic Slab"
+- **Primary Font:** **Inter** (or a similar high-performance Sans-Serif like Roboto).
+- **Headings (Display):** Bold to Extra-Bold, tight letter-spacing (-0.02em), often uppercase for section headers and brand elements.
+- **Numbers:** Monospaced or Tabular Figures are preferred for statistics (Elo, rankings) to ensure vertical alignment and clarity.
+- **Hierarchy Scale:**
+  - **Hero (Elo):** 48px, Bold, Moss Glow.
+  - **Title (Screen):** 32px, Extra-Bold, Earthy Parchment.
+  - **Subtitle (Card):** 20px, Bold.
+  - **Body:** 16px, Regular, Muted Clay for labels.
+
+---
+
+## 4. Visual Components & Styling
+
+### Container Aesthetics (The "Iron" Shell)
+- **Corner Radius:** `16px` (Large) for primary cards; `8px` (Medium) for buttons and smaller UI elements.
+- **Borders:** No heavy borders. Use subtle tonal differences (Surface vs. Base) or a very thin `1px` border in `#42493E` at 20% opacity.
+- **Elevation:** Avoid traditional drop shadows. Use "Tonal Layering" (stacking slightly lighter shades of charcoal) to create depth.
+
+### Interactive Elements (The "Moss" Touch)
+- **Primary CTA Buttons:** Solid Woody Green (`#2D5A27`) background with Bold Earthy Parchment text. Include a subtle "Book Now →" arrow for directionality.
+- **Filter Pills:** Outline or subtle Surface background with Moss Glow text for active states.
+- **Badges:** Small, rounded chips (radius `999px`) using translucent versions of Moss Glow for skill levels (e.g., "Intermediate").
+
+### Imagery & Media
+- **Venue Photography:** High-resolution, wide-angle shots of green pitches, ideally during "golden hour" or under floodlights.
+- **Treatment:** Subtle dark overlay at the bottom of images to ensure white text remains legible.
+
+---
+
+## 5. Key Design Principles
+1.  **High Contrast, Low Strain:** High accessibility through contrasting greens on dark charcoal without using "vibrating" neon colors.
+2.  **Information Breathing Room:** Use generous padding (8px grid base) to ensure data-heavy screens (like Profile/Stats) feel organized, not cluttered.
+3.  **Celebratory Progression:** Use Moss Glow gradients and visual podiums for rankings to make achievements feel "earned" and premium.

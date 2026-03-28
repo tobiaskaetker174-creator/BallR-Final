@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "BALLR",
+    "slug": "ballr",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "ballr",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#141312"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ballr.app"
+    },
+    "android": {
+      "backgroundColor": "#141312",
+      "package": "com.ballr.app"
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png",
+      "backgroundColor": "#141312"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

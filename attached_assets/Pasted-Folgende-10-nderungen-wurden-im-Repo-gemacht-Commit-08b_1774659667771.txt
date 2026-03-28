@@ -1,0 +1,104 @@
+Folgende 10 Änderungen wurden im Repo gemacht (Commit 08b8902). Bitte pull die neuesten Änderungen mit git pull origin main und überprüfe dass alles korrekt funktioniert.
+
+Geänderte Dateien (5 Dateien, +564 Zeilen):
+1. artifacts/mobile/constants/mock.ts (+106 Zeilen)
+Neue Types:
+
+EloBadgeTierName = "platinum" | "gold" | "silver" | "bronze"
+EloBadgeTier = { tier: EloBadgeTierName, ringColor: string, icon: string, label: string }
+VenueStats Interface mit totalGamesPlayed, mostActiveDay, peakTime, topPlayers[], bestPerformer
+Neue Felder in bestehenden Interfaces:
+
+Player.fairnessScore: number — Jeder Spieler hat jetzt einen individuellen Fairness-Score (unabhängig von ELO). Beispiel: Tanaka R. hat 95, Manon V. 91, Ying P. 88 — absichtlich anders sortiert als ELO-Ranking
+Venue.imageUrl: string — Alle 5 Venues haben jetzt Unsplash-Bilder von Fußballfeldern
+Neue Funktionen:
+
+getEloBadgeTier(player, allPlayers) → Gibt EloBadgeTier | null zurück basierend auf Percentile:
+Top 1% → Platinum (👑 gold ring)
+Top 10% → Gold (⭐️ gold ring)
+Top 20% → Silver (🥈 silver ring)
+Top 30% → Bronze (🥉 bronze ring)
+Rest → null (kein Badge)
+getFairnessScore(player) → Berechnet composite Score: (reliability * 0.4) + (sportsmanship_normalized * 0.4) - (noShowPenalty * 0.2)
+VENUE_STATS Record mit Mock-Statistiken für alle 5 Venues (Top-Spieler, Games, beste Tage etc.)
+2. artifacts/mobile/app/(tabs)/profile.tsx (1 Zeile geändert)
+Fix 2 — ELO Position Label:
+
+VORHER: "Top {topPct}% of players"
+NACHHER: "Your ELO is better than {100 - topPct}% of players"
+Berechnung: percentile = 100 - topPct (also wenn du Top 5% bist, ist dein ELO besser als 95% der Spieler)
+3. artifacts/mobile/app/player/[id].tsx (+49 Zeilen)
+Fix 2 — ELO Percentile auf öffentlichem Profil:
+
+Unter dem ELO-Chip wird jetzt angezeigt: "ELO is better than X% of players"
+Berechnung: playersBelowElo / totalPlayers * 100
+Fix 10 — Player Not Found Fallback:
+
+VORHER: Nur Text "Player not found" → sah broken aus
+NACHHER: Volles Fallback-UI mit:
+Zurück-Button (←)
+Icon (❌)
+Titel "Player not found"
+Erklärungstext "This player profile doesn't exist or has been removed."
+Styled im Iron & Moss Design
+4. artifacts/mobile/app/(tabs)/leaderboard.tsx (Großer Rewrite, +341 Zeilen netto)
+Fix 3 — Rankings Layout Restructure:
+
+Neue Seitenreihenfolge:
+All-time ELO Rankings (oben)
+"Größte ELO Gainer diesen Monat" — Spieler sortiert nach eloGainThisMonth
+Baller of the Month (Podium)
+"All Time" Tab-Label entfernt → heißt jetzt nur "Ranking"
+Fix 4 — Expandable Fairness Award:
+
+Neue aufklappbare Sektion "How is the Fairness Award calculated?"
+Wenn aufgeklappt zeigt es:
+📊 Reliability Score (game attendance, credits paid)
+🤝 Sportsmanship Rating (community feedback)
+✅ Fair Play Record (clean match history)
+"Higher scores = Higher fairness ranking"
+Fix 5 — Community Champion Dropdown Navigation:
+
+VORHER: Tab-Navigation (zu eng, Text zu groß)
+NACHHER: Ein Dropdown-Button mit 4 Kategorien:
+Fairness Award
+Elo Ranking
+Baller of the Month
+Tor des Monats
+Großer Heading oben auf der Seite je nach Auswahl
+Dropdown öffnet/schließt per Tap
+Fix 6 — Fairness Award zeigt richtige Spieler:
+
+VORHER: Fairness Award zeigte gleiche Spieler wie ELO (falsch!)
+NACHHER: Sortiert nach getFairnessScore() — unabhängig von ELO
+Top 10 Spieler werden angezeigt mit Fairness-Score und Free-Games Rewards
+5. artifacts/mobile/app/game/[id].tsx (+66 Zeilen)
+Fix 7 — Game Screen ELO Position:
+
+VORHER: "Your ELO is lower than 100% of signed-up players" (falsch!)
+NACHHER: "Your ELO is better than X% of signed-up players"
+Berechnung gegen nur die Spieler die für dieses Spiel angemeldet sind
+Fix 8 — Venue Statistics Sektion:
+
+Neue "VENUE STATISTICS" Box im Game Detail Screen
+Zeigt: Total Games Played, Most Active Day, Best Win Rate, Top 3 Players at this venue
+Daten kommen aus VENUE_STATS in mock.ts
+Fallback wenn keine Stats vorhanden
+Fix 9 — Venue Images:
+
+Venue-Bilder werden jetzt im Game Detail angezeigt (React Native Image component)
+Alle Bangkok-Venues haben realistische Fußballfeld-Fotos von Unsplash
+Bali Venue hat Beach/Tropical Football Bild
+Zusammenfassung der 10 Fixes:
+#	Fix	Datei(en)	Status
+1	ELO Badge Tiers (Platinum/Gold/Silver/Bronze)	mock.ts	✅
+2	ELO Percentile Label ("better than X%")	profile.tsx, player/[id].tsx	✅
+3	Rankings Page Layout Restructure	leaderboard.tsx	✅
+4	Fairness Award Expandable	leaderboard.tsx	✅
+5	Community Champion Dropdown Nav	leaderboard.tsx	✅
+6	Fairness Award eigene Spieler-Sortierung	leaderboard.tsx, mock.ts	✅
+7	Game Screen ELO Display Fix	game/[id].tsx	✅
+8	Venue Statistics Cards	game/[id].tsx, mock.ts	✅
+9	Bangkok Venue Images	mock.ts, game/[id].tsx	✅
+10	Player Not Found Fallback	player/[id].tsx	✅
+Zum Testen: git pull origin main dann npx expo start im artifacts/mobile/ Ordner.

@@ -1,0 +1,447 @@
+16. Rating Improvement Display (Monthly)
+Feature:
+
+Show month-over-month improvement in Elo/Baller Rating.
+Display:
+
+On profile or dashboard, show:
+
+    "Your Baller Rating: 1650 ↑ +150 this month"
+    "Your Elo Rating: 1800 ↑ +200 this month"
+    Trend visualization (chart or arrow)
+    Compare to previous month
+
+Data:
+
+    Store monthly snapshots of ratings
+    Calculate: current_month - previous_month
+    Show positive/negative change with color (green up, red down)
+
+Locations:
+
+    Player profile
+    Personal dashboard
+    Leaderboard (optional)
+
+17. Social Links on Profile (Instagram & WhatsApp)
+Feature:
+
+Players can add Instagram & WhatsApp contact info to their profile.
+Profile Fields:
+
+    Instagram handle (optional)
+    WhatsApp number (optional)
+
+Display:
+
+    Show on public profile (if user fills in)
+    Icons/links for easy access
+    "Contact me on Instagram" or similar
+
+Privacy:
+
+    Completely optional
+    User chooses what to show
+    No default sharing
+
+Implementation:
+
+    Add instagram_handle & whatsapp_number fields to players table
+    Add input fields in profile edit page
+    Display as clickable links on public profile
+
+18. Social Share Pop-up — Achievements (Gold/Silver/Bronze + Player of Month)
+Feature:
+
+When a player receives a medal (Gold/Silver/Bronze) or becomes Player of the Month, a pop-up appears asking them to share the achievement on their connected social media accounts.
+Details:
+
+Trigger:
+
+    Gold medal awarded
+    Silver medal awarded
+    Bronze medal awarded
+    Player of the Month awarded
+
+Pop-up Content:
+
+    "Celebrate your achievement!"
+    "Share on your connected channels"
+    Checkbox options for each connected platform
+
+Social Channels Supported:
+
+    Instagram (with pre-made graphic + caption)
+    LinkedIn (with achievement stats + caption)
+    Option to add/connect LinkedIn if not already linked
+
+User Action:
+
+    User can select which platforms to share on
+    Pre-populated post text with achievement details
+    User can edit text before posting
+    "Share Now" button posts to selected platforms
+    "Skip" option to dismiss
+
+Post Template Example (Instagram):
+
+🏆 I just earned [Gold/Silver/Bronze] status on @BallRApp! 
+My Elo Rating: [1650]
+Games Played: [42]
+Win Rate: [65%]
+Join me and level up your football game! ⚽
+[Link to download BallR]
+
+Post Template Example (LinkedIn):
+
+📊 Achievement Unlocked on @BallRApp!
+
+I've earned [Gold/Silver/Bronze] status through consistent performance on the pitch.
+
+📈 Stats:
+- Elo Rating: [1650]
+- Games: [42]
+- Win Rate: [65%]
+- Rank: Top [5%] in Bangkok
+
+Great to see passion for pickup football in the community. If you're in Bangkok, join us! ⚽
+
+#Football #Sports #Bangkok #Achievement
+
+Implementation:
+
+    Store user's connected social accounts
+    Use official APIs for posting (Instagram Graph API, LinkedIn API)
+    Allow users to connect/disconnect accounts in app settings
+    Track successful shares (analytics)
+
+19. Bring a Friend Referral Program
+Feature:
+
+Referral/friend invitation system with rewards for both referrer and referred user.
+Details:
+
+How it works:
+
+    Each user gets a unique sign-up/referral link
+    User shares link with friend
+    Friend signs up using the link
+    Referrer gets: 1 free game (credit)
+    Referred friend gets: 1 free game (credit) upon first successful signup
+
+Implementation:
+
+    Generate unique referral code for each user (e.g., TOBIAS123AB)
+    Share via link: ballr.app/join?ref=TOBIAS123AB
+    Track referral source in database
+    Auto-credit free games when new user completes signup
+    Display referral link in-app (in profile/settings)
+    Show referral stats: "You've invited X friends"
+    Optional: Leaderboard of top referrers
+
+Mechanics:
+
+    Free game credit is non-transferable
+    Must be used within 30/60 days
+    Limit: One free game per successful referral (not unlimited)
+    Prevents abuse: Same email/phone number cannot referral-spam
+
+Copy Examples:
+
+    "Bring a friend, both get a free game"
+    "Share your code: TOBIAS123AB"
+    "You've unlocked 5 free games from friends!"
+
+Analytics:
+
+    Track referral conversion rate
+    Monitor most effective referrers
+    A/B test messaging/incentives
+
+20. Game Notifications System
+Pre-Game Notifications
+12 Hours Before Game
+
+Trigger: Game scheduled 12 hours from now
+Notification Type: Carpooling invitation
+
+    Message: "Want to join a carpool to [Venue]? See available rides"
+    Shows: Drivers going to same venue, available spots, cost split
+    Action: Join existing carpool or create new one
+    Purpose: Community building + reduce no-shows
+
+2 Hours Before Game
+
+Trigger: Game scheduled 2 hours from now
+Notification Type: Game reminder
+
+    Message: "Your game starts in 2 hours at [Venue Name]"
+    Shows: Time, location, player count, skill level
+    Action: Confirm attendance or cancel
+    Purpose: Prevent last-minute no-shows
+
+Post-Game Notifications
+After Game Ends
+
+Trigger: Game marked as completed
+Notification Type: Player rating reminder
+
+    Message: "Rate your teammates from today's game"
+    Shows: List of all players from game
+    Action: Rate each player (1-5 stars + optional written review)
+    Purpose: Build game quality feedback system
+    Non-dismissible initially (appears on app open)
+
+Notification Settings
+
+    Users can customize notification timing
+    Opt-out per game or globally
+    Notification type preferences (push, in-app, email)
+
+21. Goal of the Month Nomination System
+Feature:
+
+Users nominate and vote on goals from games, system automatically selects top 3 goals monthly.
+Prerequisites:
+
+    Pixelot integration (video platform for game footage)
+    Goals must be recorded/uploaded to Pixelot
+
+How it Works:
+
+1. Users Watch Game Videos on Pixelot
+
+    Players can watch full game footage or highlight clips
+    Videos show timestamps for each goal
+
+2. Nomination with Timestamp
+
+    User clicks on a goal in the video (using timestamp)
+    User nominates goal: "This should be Goal of the Month!"
+    Nomination creates database entry with: Video ID, timestamp, nominator, nominators' count
+
+3. Automatic Calculation
+
+    System tracks all nominations
+    Counts nominations per goal
+    Goal with most nominations = ranked highest
+    Auto-generates Top 3 Goals for the Month
+
+4. Monthly Winner Announcement
+
+    Top 3 goals displayed on website (with videos)
+    Featured in app "Goal of the Month" section
+    Shared on social media
+
+Database Schema:
+
+goals_nominations {
+  id: UUID
+  video_id: string (Pixelot ID)
+  timestamp: float (seconds in video)
+  nominator_id: UUID
+  month: YYYY-MM
+  nomination_count: int
+  created_at: timestamp
+}
+
+Copy/UI Examples:
+
+    Button: "📹 Nominate this goal for Goal of the Month"
+    Display: "Goal nominated by 47 players!"
+    Leaderboard: "🥇 Goal with 127 nominations | 🥈 Goal with 89 nominations"
+
+Features:
+
+    Users can nominate multiple goals per month
+    Can't nominate same goal twice (prevents spam)
+    Nominations reset monthly
+    Only players who attended the game can nominate (verified by attendance)
+
+UI/UX:
+
+    In-App: Display "Coming Soon" badge on Goal of the Month section
+        Teaser text: "Nominate and vote on the best goals each month — launching soon!"
+        Shows placeholder/preview of feature
+        Builds anticipation
+
+    On Website: Display "Coming Soon" badge on Goal of the Month section
+        Same teaser messaging
+        Creates awareness that feature is coming
+
+22. Community Champion Award — Fairness Recognition
+Feature:
+
+Monthly award for players with highest Fairness scores. Winners get free games + community recognition.
+Details:
+
+The Award: Based on existing Fairness-Score (not new votes):
+
+Rankings:
+
+    🥇 1st Place: 3 free games
+    🥈 2nd Place: 2 free games
+    🥉 3rd Place: 1 free game
+    Top 10% (Fairness Score ≥95): 1 free game each
+
+How It Works:
+
+    Every player has a Fairness-Score (already tracked)
+    At end of month, system ranks ALL players by Fairness-Score
+    Top 3 get ranked rewards
+    Additionally, ALL players in top 10% (score ≥95) get 1 free game
+
+Anti-Gaming Safeguards: (Fairness-Score system already has anti-gaming measures built in — see Mirror Score #3 and Fairness Economy #7 for details)
+
+Prevention Measures:
+
+    Score Integrity: Fairness-Score calculated from anonymous peer ratings (hard to game)
+    Minimum Threshold:
+        Must have played minimum 10 games in the month
+        Minimum 25 unique opponents (prevents friend-only rating cycles)
+    Suspicious Pattern Detection:
+        Algorithm flags if fairness score suddenly spikes
+        Manual review if spike is >0.8 points in <7 days
+    Recency Weight: Only games from last 30 days count
+    Community Reporting: Players can report suspected gaming
+        If 3+ reports → investigation
+        Confirmed cheaters lose 20 fairness points + can't get award that month
+
+Community Recognition:
+
+    Winner's profile gets "Community Champion 🏆" badge (limited to current month)
+    Featured on leaderboard + website "Hall of Fame"
+    Optional: Winner gets social media feature ("Meet the Champion")
+    No name requirement — can be anonymous if preferred
+
+Why This Works:
+
+    Rewards fairness explicitly (not hidden in Elo system)
+    Creates monthly "success story" for good behavior
+    Anti-cheating measures are strong but not obvious
+    Ensures only truly fair players win (not just well-liked)
+    Motivates new players: "Hey, I can be a Champion if I play fair"
+
+23. Venue Map + Community Chat Link
+Feature:
+
+Interactive map showing all pickup venues/fields in the city, with direct link to community chat for each venue.
+Details:
+
+Venue Map:
+
+    Interactive map showing all pickup football fields/venues in Bangkok (expandable to other cities)
+    Map Icons:
+        🟠 Active games (games happening now)
+        🟡 Upcoming games (next 2 hours)
+        ⚫ No games scheduled (but available)
+    Click venue → Shows:
+        Venue name + address
+        Available games today/tomorrow
+        Available slots
+        Price range
+        Facilities (lights, equipment, etc.)
+
+Community Chat Link:
+
+    Each venue has a community chat group (WhatsApp, Telegram, or in-app)
+    Direct link from map: "Join [Venue Name] Community"
+    Purpose:
+        Organize pickup games
+        Discuss field conditions
+        Find teammates
+        Last-minute game announcements
+
+Features:
+
+    Search/filter venues by: Name, distance, game type, availability
+    Save favorite venues
+    Get notifications when game is organized at favorite venue
+    Show community chat participant count ("12 players in chat")
+    Optional: Integration with WhatsApp/Telegram to avoid building separate chat
+
+Design (Similar to Celebrek):
+
+    Clean map view
+    Orange/yellow color coding for game status
+    List view toggle (map ↔ list)
+    Quick info cards
+
+Summary of Changes
+Feature 	Priority 	Status 	Notes
+Remove "both-sided" filter 	Medium 	Quick 	1-2 lines
+Admin profile for field images 	Medium 	New Feature 	~30-60 min
+Fix: Past games bug 	HIGH 	Bug Fix 	Critical
+Fix: Join Match players 	HIGH 	Bug Fix 	Race condition?
+AI team assignment view 	Medium 	Feature 	Shows AI calculations
+Baller of the Month (rename + formula) 	Medium 	Enhancement 	Rename + display calc
+Clickable player profiles (global) 	Medium 	Feature 	Navigation improvement
+Player profile enhancements 	Medium 	Enhancement 	Image upload, scores
+Dignity Protection hidden 	Medium 	UX Fix 	Remove from UI
+Favorite team/player fields 	Medium 	Feature 	From existing docs
+Carpooling in match views 	Medium 	Feature 	Accessible on match detail
+ELO range display 	Medium 	Feature 	Player position visual
+Rivals system + analytics 	Medium 	Feature 	Private personal stats
+Profile reviews (moderated) 	Medium 	Feature 	User approval required
+Player reporting system 	Medium 	Feature 	Complaint/moderation
+Gamification (streaks, etc) 	Medium 	Feature 	From Feature Docs
+Rating improvement display 	Medium 	Feature 	Monthly progress
+Social links (Instagram/WhatsApp) 	Medium 	Feature 	Optional profile links
+Social Share Pop-ups 	Medium 	Feature 	Medals + achievement sharing
+Bring a Friend Referral 	Medium 	Feature 	1 free game per invite
+Game Notifications 	Medium 	Feature 	Pre-game + post-game reminders
+Goal of the Month Nominations 	Medium 	Feature 	Pixelot integration + voting
+Community Champion Award 	Medium 	Feature 	Monthly fairness recognition + free games
+Venue Map + Chat Link 	Medium 	Feature 	Interactive field map + community groups
+Files to Modify/Create
+Existing Files (Likely):
+
+    src/pages/Discover.tsx — Remove filter word
+    src/pages/MyGames.tsx — Fix game detail link
+    src/pages/GameDetail.tsx — Load past game data
+    src/components/PlayerCard.tsx — Add medal display
+
+New Files (Needed):
+
+    src/pages/AdminPanel.tsx — Admin field image management
+    src/components/MedalDisplay.tsx — Medal component
+    scripts/calculatePOTM.ts — Monthly medal calculation
+    src/pages/AIAssignmentView.tsx — AI team recommendation view
+
+Supabase Tables (Check/Create)
+Existing:
+
+    games — Add flag: ai_assignment_calculated (boolean)
+    players — Already exists
+
+New:
+
+    player_medals — Schema:
+
+    id (PK)
+    player_id (FK)
+    medal_type (gold/silver/bronze)
+    month (integer 1-12)
+    year (integer)
+    created_at (timestamp)
+
+    admin_users — Schema (if not exists):
+
+    user_id (FK)
+    is_admin (boolean)
+    created_at (timestamp)
+
+Questions for Clarification
+
+    Admin creation: How should admins be created? Manual SQL insert or UI form?
+    POTM timing: When to calculate? End of month? Manually triggered?
+    AI algorithm: Is the team assignment already calculated, just not displayed? Or needs implementation?
+    Medal display: Should medals show on every view, or only specific places (profile, leaderboard)?
+
+Next Steps
+
+    Start with HIGH priority: Fix "Past Games" bug
+    Then MEDIUM: Filter update, AI view, medals
+    Final: Admin panel setup
+
+Estimated Total Time: 2-4 hours depending on AI algorithm state

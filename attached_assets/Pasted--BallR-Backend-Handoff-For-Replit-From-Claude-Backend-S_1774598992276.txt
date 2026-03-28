@@ -1,0 +1,696 @@
+# BallR Backend Handoff — For Replit
+**From:** Claude (Backend / Supabase)
+**To:** Replit (Mobile App / Frontend)
+**Date:** 2026-03-27 (Updated: v3 with Venue Cards + King of the Field)
+**Status:** Backend LIVE & ready to consume — **API v3.0**
+
+---
+
+## TL;DR
+
+I built a **complete Supabase backend** with:
+- **100 realistic fake users**, **253 games** (3 months of simulated activity)
+- Friendships, chat messages, peer ratings, ELO history, leaderboard scores, notifications
+- **10 Crews** (Closed Communities with Dual ELO) — NEW
+- **5 Leagues** (with Stripe payment simulation, organizer dashboards) — NEW
+
+Everything is **live and queryable right now**.
+
+Your job: **Replace mock.ts imports with API calls or Supabase client queries.**
+
+---
+
+## 1. Connection Credentials
+
+```env
+SUPABASE_URL=https://hjybaxcryvtydktktmis.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqeWJheGNyeXZ0eWRrdGt0bWlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMjc4ODMsImV4cCI6MjA4OTcwMzg4M30.kip_J82vrZdz1ePB2-bhSzNs4npFKobOgSj3fBk3yZE
+```
+
+Add these to your `.env` or Replit Secrets.
+
+### Install Supabase Client
+```bash
+pnpm add @supabase/supabase-js
+```
+
+### Initialize Client (e.g. `lib/supabase.ts`)
+```typescript
+import { createClient } from '@supabase/supabase-js';
+
+export const supabase = createClient(
+  process.env.EXPO_PUBLIC_SUPABASE_URL!,
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
+);
+```
+
+---
+
+## 2. What Data Exists
+
+| Table | Rows | Description |
+|-------|------|-------------|
+| `players` | 100 | Full player profiles with ELO, stats, bios, nationalities |
+| `games` | 253 | 225 completed (Jan 1 – Mar 26) + 28 upcoming (Mar 27 – Apr 5) |
+| `bookings` | 3,081 | Player-to-game assignments with team (A/B), status, payment |
+| `venues` | 8 | 6 in Bangkok, 2 in Bali — with coords, amenities, surface type |
+| `cities` | 2 | Bangkok (THB) + Bali (IDR) |
+| `elo_history` | 2,831 | Game-by-game ELO changes per player |
+| `peer_ratings` | 5,398 | Skill + sportsmanship ratings (1-5) between players |
+| `friendships` | 220 | Accepted friend connections |
+| `friend_requests` | 40 | Pending + declined requests |
+| `chat_messages` | 2,179 | Pre-game + post-game messages per game |
+| `profile_reviews` | 154 | Text reviews between friends |
+| `notifications` | 479 | Game confirmations, rating reminders, POTM alerts |
+| `potm_scores` | 122 | Baller of the Month scores for Jan/Feb/Mar per city |
+| `crews` | 0 | Table exists, ready for crew feature |
+| `waitlist` | 0 | Table exists, ready for waitlist feature |
+| `game_passes` | 0 | Table exists, ready for pass/credit system |
+
+### Player Skill Distribution (realistic bell curve)
+| Tier | Count | ELO Range |
+|------|-------|-----------|
+| Elite | 10 | 1500–1862 |
+| Pro | 15 | 1200–1499 |
+| Semi-Pro | 24 | 1000–1199 |
+| Amateur | 30 | 800–999 |
+| Rookie | 21 | 100–799 |
+
+### Top Players
+| Name | ELO | Tier | Games | W/L/D | Position |
+|------|-----|------|-------|-------|----------|
+| Matt Wang | 1862 | Elite | 42 | 20/16/6 | MID |
+| Chad Pratt | 1814 | Elite | 150 | 72/62/16 | FWD |
+| Jake O'Brien | 1783 | Elite | 148 | 71/61/16 | FWD |
+| Bella Schmidt | 1719 | Elite | 141 | 66/58/17 | — |
+| Maya Chen | 1656 | Elite | 151 | 65/69/17 | — |
+
+### POTM March 2026 (Bangkok)
+| Rank | Name | Score | Games | Wins | Win Rate |
+|------|------|-------|-------|------|----------|
+| #1 | Bella Schmidt | 743.5 | 48 | 26 | 54.2% |
+| #2 | Oscar Kim | 683.1 | 28 | 13 | 46.4% |
+| #3 | (varies) | ~650 | — | — | — |
+
+---
+
+## 3. Two Ways to Query Data
+
+### Option A: REST API (Edge Function) — Recommended for quick integration
+Base URL: `https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api`
+
+No auth header needed (JWT verification disabled for demo).
+
+| Endpoint | Description | Example |
+|----------|-------------|---------|
+| `GET /health` | API status check | — |
+| `GET /stats` | Total players, games, bookings | — |
+| `GET /players?city=Bangkok&limit=50` | List players, sorted by ELO | `?city=Bali` |
+| `GET /players/:id` | Single player with all fields | — |
+| `GET /players/:id/elo-history` | Full ELO progression | — |
+| `GET /players/:id/friends` | Player's friend list with profiles | — |
+| `GET /players/:id/notifications` | Player's notifications (newest first) | — |
+| `GET /players/:id/reviews` | Accepted profile reviews | — |
+| `GET /games?status=upcoming&limit=30` | Games with venue + organizer + bookings | `?status=completed` |
+| `GET /games/:id` | Single game with all nested data | — |
+| `GET /games/:id/chat` | Chat messages with player info | — |
+| `GET /leaderboard?type=baller&city=Bangkok` | POTM leaderboard | `?type=elo` or `?type=champion` |
+| `GET /venues?city_id=c1000000-0000-0000-0000-000000000001` | Venues filtered by city | — |
+| `GET /cities` | All cities | — |
+
+#### Example: Fetch upcoming games
+```typescript
+const res = await fetch(
+  'https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/games?status=upcoming'
+);
+const games = await res.json();
+```
+
+### Option B: Supabase Client (Direct DB access) — More flexible
+```typescript
+// Fetch upcoming games with venue and players
+const { data: games } = await supabase
+  .from('games')
+  .select(`
+    *,
+    venue:venues(*),
+    organizer:players!games_organizer_id_fkey(id, name, elo_rating, avatar_url),
+    bookings(
+      id, team, status,
+      player:players(id, name, elo_rating, elo_tier, preferred_position, profile_image_url)
+    )
+  `)
+  .eq('status', 'upcoming')
+  .order('date', { ascending: true });
+
+// Fetch leaderboard (top players by ELO in Bangkok)
+const { data: leaderboard } = await supabase
+  .from('players')
+  .select('id, name, elo_rating, elo_tier, games_played, games_won, medal, profile_image_url')
+  .eq('based_in', 'Bangkok')
+  .order('elo_rating', { ascending: false })
+  .limit(50);
+
+// Fetch POTM for March
+const { data: potm } = await supabase
+  .from('potm_scores')
+  .select('*, player:players(id, name, elo_rating, elo_tier, profile_image_url, medal)')
+  .eq('month', '2026-03-01')
+  .order('potm_score', { ascending: false });
+```
+
+---
+
+## 4. Database Column Reference
+
+### `players` table
+```
+id                        uuid (PK)
+email                     text (unique) — format: firstname.lastname@ballr.app
+name                      text
+avatar_url                text (nullable)
+profile_image_url         text — pravatar.cc URLs (working placeholder avatars)
+banner_image_url          text (nullable)
+nationality               text — e.g. "British", "Thai", "German"
+preferred_position         text — 'GK' | 'DEF' | 'MID' | 'FWD'
+foot_preference            text — 'left' | 'right' | 'both'
+bio                       text
+based_in                  text — 'Bangkok' | 'Bali'
+member_since              text — e.g. "Jan 2025"
+current_city_id           uuid (FK → cities)
+
+-- Stats
+elo_rating                integer (100–2000)
+elo_tier                  text — 'Rookie' | 'Amateur' | 'Semi-Pro' | 'Pro' | 'Elite'
+elo_calibrated            boolean (true after 5+ games)
+elo_gain_this_month       integer (positive or negative)
+games_played              integer
+games_won                 integer
+games_lost                integer
+games_drawn               integer
+win_streak                integer
+reliability_score         integer (0–100)
+no_show_count             integer
+avg_skill_rating          numeric(3,2) — average from peer_ratings (1.00–5.00)
+avg_sportsmanship_rating  numeric(3,2)
+baller_score              numeric(6,1) — composite score
+
+-- Social
+medal                     text (nullable) — 'gold' | 'silver' | 'bronze' (current month POTM)
+instagram                 text (nullable) — e.g. "matt.bkk"
+whatsapp                  text (nullable)
+favorite_team             text — e.g. "Liverpool FC"
+favorite_player           text — e.g. "Messi"
+following                 uuid[] — array of player IDs
+
+created_at                timestamptz
+```
+
+### `games` table
+```
+id                        uuid (PK)
+venue_id                  uuid (FK → venues)
+city_id                   uuid (FK → cities)
+organizer_id              uuid (FK → players, nullable)
+date                      date — e.g. '2026-03-26'
+start_time                time — e.g. '18:00:00'
+duration_minutes          integer — 60 or 90
+format                    text — '5v5' | '6v6' | '7v7' | '8v8' | '11v11'
+max_players               integer — 10/12/14/16/22
+current_players           integer
+skill_category            text — 'beginner' | 'intermediate' | 'advanced' | 'mixed'
+price_per_player          numeric — in local currency
+currency                  text — 'THB' or 'IDR'
+status                    text — 'upcoming' | 'in_progress' | 'completed' | 'cancelled'
+
+-- Results (only for completed games)
+team_a_score              integer (nullable)
+team_b_score              integer (nullable)
+winning_team              text (nullable) — 'blue' | 'red' | 'draw'
+teams_balanced            boolean
+ai_assignment_calculated  boolean
+ai_assignment             jsonb (nullable)
+
+-- Constraints
+min_elo                   integer (nullable)
+max_elo                   integer (nullable)
+avg_elo                   integer (nullable)
+min_reliability           integer (nullable)
+description               text (nullable)
+registration_cutoff       timestamptz (nullable)
+
+created_at                timestamptz
+```
+
+### `bookings` table
+```
+id              uuid (PK)
+game_id         uuid (FK → games)
+player_id       uuid (FK → players)
+team            text — 'A' | 'B' (A = blue team, B = red team)
+status          text — 'confirmed' | 'attended' | 'no_show' | 'cancelled' | 'waitlist'
+paid            boolean
+checked_in      boolean
+checked_in_at   timestamptz (nullable)
+metadata        jsonb (nullable)
+created_at      timestamptz
+```
+
+### `venues` table
+```
+id                uuid (PK)
+city_id           uuid (FK → cities)
+name              text
+address           text
+latitude          numeric
+longitude         numeric
+surface_type      text — 'grass' | 'turf' | 'indoor'
+has_changing_rooms boolean
+has_showers       boolean
+has_parking       boolean
+amenities         text[] — e.g. ['changing_rooms','showers','parking','lights','bar']
+capacity          integer
+community_link    text (nullable) — WhatsApp/Telegram group link
+community_type    text (nullable) — 'whatsapp' | 'telegram'
+photo_url         text (nullable)
+created_at        timestamptz
+```
+
+### `peer_ratings` table
+```
+id                    uuid (PK)
+game_id               uuid (FK → games)
+rater_id              uuid (FK → players)
+rated_id              uuid (FK → players)
+skill_rating          integer (1–5)
+sportsmanship_rating  integer (1–5)
+technique             integer (1–5)
+teamplay              integer (1–5)
+fitness               integer (1–5)
+fair_play             boolean
+comment               text (nullable)
+created_at            timestamptz
+```
+
+### `elo_history` table
+```
+id          uuid (PK)
+player_id   uuid (FK → players)
+game_id     uuid (FK → games)
+old_elo     integer
+new_elo     integer
+change      integer (positive or negative)
+reason      text — 'win' | 'loss' | 'draw' | 'no_show'
+created_at  timestamptz
+```
+
+### `potm_scores` table (Baller of the Month)
+```
+id              uuid (PK)
+player_id       uuid (FK → players)
+city_id         uuid (FK → cities)
+month           date — first of month, e.g. '2026-03-01'
+games_played    integer
+wins            integer
+draws           integer
+losses          integer
+win_rate        numeric (0.000–1.000)
+avg_peer_rating numeric
+potm_score      numeric — composite score (higher = better)
+rank            integer (1 = winner)
+is_winner       boolean
+```
+
+### `chat_messages` table
+```
+id          uuid (PK)
+game_id     uuid (FK → games)
+player_id   uuid (FK → players)
+message     text
+created_at  timestamptz
+```
+
+### `notifications` table
+```
+id          uuid (PK)
+player_id   uuid (FK → players)
+type        text — 'game_confirmed' | 'teams_ready' | 'rating_reminder' | 'potm' | 'no_show' | 'game_full' | 'new_game' | 'game_reminder'
+title       text
+body        text
+read        boolean
+game_id     uuid (FK → games, nullable)
+created_at  timestamptz
+```
+
+### `friendships` table
+```
+id          uuid (PK)
+player_a    uuid (FK → players)
+player_b    uuid (FK → players)
+created_at  timestamptz
+```
+
+### `friend_requests` table
+```
+id              uuid (PK)
+from_player_id  uuid (FK → players)
+to_player_id    uuid (FK → players)
+status          text — 'pending' | 'accepted' | 'declined'
+created_at      timestamptz
+```
+
+### `profile_reviews` table
+```
+id          uuid (PK)
+subject_id  uuid (FK → players) — the player being reviewed
+author_id   uuid (FK → players) — the reviewer
+text        text
+status      text — 'pending' | 'accepted' | 'rejected'
+created_at  timestamptz
+```
+
+---
+
+## 5. City IDs (you'll need these for filtering)
+
+```
+Bangkok:  c1000000-0000-0000-0000-000000000001
+Bali:     c1000000-0000-0000-0000-000000000002
+```
+
+---
+
+## 6. Mapping: mock.ts → Supabase
+
+Here's how the current mock data maps to real data:
+
+| mock.ts | Supabase | Notes |
+|---------|----------|-------|
+| `mockPlayers` array | `players` table | 11 mock → 100 real players |
+| `mockVenues` array | `venues` table | 5 mock → 8 real venues |
+| `mockUpcomingGames` | `games WHERE status='upcoming'` | 6 mock → 28 real upcoming |
+| `mockCompletedGame` | `games WHERE status='completed'` | 1 mock → 225 real completed |
+| `mockChatMessages` | `chat_messages` JOIN `players` | Per game_id |
+| `mockNotifications` | `notifications` WHERE player_id=X | Per player |
+| `mockLeaderboard` | `potm_scores` JOIN `players` | Per month + city |
+| `getFormattedDate()` | Keep as-is (utility function) | — |
+| `getGameTimeDisplay()` | Keep as-is (utility function) | — |
+| `getEloBadgeColor()` | Keep as-is (utility function) | — |
+
+### Key Differences from Mock Data
+1. **Team assignment**: Mock uses `teamAssignment: 'blue'|'red'`. DB uses `team: 'A'|'B'` where **A = blue, B = red**
+2. **Game time**: Mock has `gameTime: Date`. DB has separate `date` + `start_time` columns — combine them: `new Date(game.date + 'T' + game.start_time)`
+3. **Skill level**: Mock uses `skillLevel`. DB uses `skill_category` with values `'beginner'|'intermediate'|'advanced'|'mixed'`
+4. **Player avatars**: DB has `profile_image_url` with working pravatar.cc URLs. Also has `avatar_url` (currently null)
+5. **Booking status**: Mock uses `paymentStatus`. DB uses `paid: boolean` + `status` field
+6. **Positions**: DB stores single `preferred_position` as text, mock had `preferredPositions[]` array
+
+---
+
+## 7. What I Need From You (Replit)
+
+### Must Do
+1. **Add Supabase credentials** to Replit Secrets / .env
+2. **Install `@supabase/supabase-js`** in the mobile app
+3. **Create `lib/supabase.ts`** client initialization (code above)
+4. **Replace mock.ts imports** in these screens with Supabase queries:
+   - `app/(tabs)/index.tsx` — Home/Discover: fetch upcoming games
+   - `app/(tabs)/leaderboard.tsx` — Rankings: fetch potm_scores + players
+   - `app/(tabs)/my-games.tsx` — My Games: fetch bookings for current user
+   - `app/(tabs)/profile.tsx` — Profile: fetch single player + stats
+   - `app/game/[id].tsx` — Game Detail: fetch game with bookings + chat
+   - `app/notifications.tsx` — Notifications: fetch from notifications table
+   - `app/reviews.tsx` — Reviews: fetch profile_reviews
+
+### Should Do
+5. **Pick a "current user"** for the demo — I suggest using **Chad Pratt** (id from players table, ELO 1814, Elite tier, 150 games played) as the logged-in user. Query: `supabase.from('players').select('*').eq('name', 'Chad Pratt').single()`
+6. **Add loading states** — real data is async, mock was synchronous
+7. **Add error handling** for failed queries
+
+### Nice to Have
+8. **Real-time subscriptions** for chat messages (Supabase supports this):
+```typescript
+supabase.channel('game-chat')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `game_id=eq.${gameId}` },
+    payload => { /* add new message to state */ })
+  .subscribe();
+```
+9. **Write operations** — booking a game, sending chat, rating players (RLS policies allow reads; I can add write policies when needed)
+
+### Do NOT Touch
+- The Supabase database schema — it's production-ready
+- The Edge Function (`ballr-api`) — it's deployed and working
+- Any backend logic — that's my domain
+
+---
+
+## 8. NEW: Crews Feature (Closed Communities)
+
+### Data
+| Table | Rows | Description |
+|-------|------|-------------|
+| `crews` | 10 | 8 Bangkok + 2 Bali crews |
+| `crew_members` | ~60 | Members with roles + crew-specific ELO |
+| `crew_games` | ~80 | Games linked to crews |
+| `crew_invites` | 0 | Ready for invite flow |
+| `crew_elo_history` | 0 | Ready for crew ELO tracking |
+| `crew_seasons` | 0 | Ready for seasonal competitions |
+| `crew_challenges` | 0 | Ready for inter-crew challenges |
+
+### Sample Crews
+| Name | Members | City | Type |
+|------|---------|------|------|
+| Sukhumvit FC | 2 | Bangkok | Private, competitive |
+| Digital Nomad Kickabout | 7 | Bangkok | Public, casual |
+| Bangkok Titans | 5 | Bangkok | Private, elite (min ELO 1200) |
+| Sunday League BKK | 10 | Bangkok | Public, all levels |
+| Canggu Ballers | 5 | Bali | Public, mixed |
+
+### Crews API Endpoints
+| Endpoint | Description |
+|----------|-------------|
+| `GET /crews` | List all crews (`?city_id=...&public=true`) |
+| `GET /crews/:id` | Single crew with creator info |
+| `GET /crews/:id/members` | Members sorted by crew ELO |
+| `GET /crews/:id/games` | Crew's games with venue info |
+| `GET /crews/:id/leaderboard` | Crew-internal rankings |
+| `GET /crews/join?code=SUKH-abc123` | Look up crew by invite code |
+| `GET /players/:id/crews` | Player's crews |
+
+### `crews` table columns
+```
+id, name, description, logo_url, primary_color, city_id, created_by,
+is_private, max_members, member_count, game_count, avg_elo,
+invite_code, invite_expires_at, created_at
+```
+
+### `crew_members` table columns
+```
+crew_id, player_id, role ('owner'|'admin'|'member'),
+crew_elo, crew_games_played, crew_wins, crew_losses, crew_draws,
+status ('active'|'inactive'), joined_at
+```
+
+### Dual ELO Concept
+- Each player has a **global ELO** (`players.elo_rating`) AND a **crew ELO** (`crew_members.crew_elo`)
+- Crew games update BOTH: global ELO via `elo_history`, crew ELO via `crew_elo_history`
+- The leaderboard tab should show both: "Global" and per-crew rankings
+
+---
+
+## 9. NEW: BallR League Feature
+
+### Data
+| Table | Rows | Description |
+|-------|------|-------------|
+| `leagues` | 5 | Active leagues with full config |
+| `league_organizers` | ~8 | Organizers with revenue share |
+| `league_members` | ~130 | Members with league-specific ELO |
+| `league_games` | ~75 | Games linked to leagues with round numbers |
+| `league_payments` | ~500+ | Simulated Stripe payments |
+| `league_elo_history` | 0 | Ready for league ELO tracking |
+
+### Sample Leagues
+| Name | Players | Games | Fee | Organizer |
+|------|---------|-------|-----|-----------|
+| Bangkok Premier League | 20 | 12 | 7.5% | Chad Pratt |
+| Chill Kicks Bangkok | 29 | 21 | 5% | Freya Park |
+| Bali Beach Football League | 21 | 13 | 5% | Amir Bilousov |
+| Thonglor After Dark | 29 | 19 | 7.5% | Bella Schmidt |
+| Women's Football Bangkok | 28 | 9 | 5% | Gio Larsson |
+
+### Leagues API Endpoints
+| Endpoint | Description |
+|----------|-------------|
+| `GET /leagues` | Discover leagues (`?city_id=...&featured=true`) |
+| `GET /leagues/:id` | Single league with organizer + venue |
+| `GET /leagues/:id/members` | Members sorted by league ELO |
+| `GET /leagues/:id/leaderboard` | League rankings |
+| `GET /leagues/:id/games` | League schedule with round numbers |
+| `GET /leagues/:id/dashboard` | Organizer dashboard (revenue, stats) |
+| `GET /leagues/:id/payments` | Payment history |
+| `GET /players/:id/leagues` | Player's leagues |
+
+### `leagues` table columns
+```
+id, name, description, logo_url, cover_image_url,
+city_id, location_name, latitude, longitude,
+organizer_id, stripe_account_id, stripe_onboarded, booking_fee_percent,
+format, skill_level, max_teams, current_teams,
+game_day, default_time, default_venue_id, price_per_player, currency,
+total_games, total_players, total_revenue, avg_elo,
+status, is_featured, is_public, created_at
+```
+
+### `league_payments` table columns
+```
+id, league_id, game_id, player_id,
+amount, currency, platform_fee, organizer_payout,
+stripe_payment_intent_id, status, created_at
+```
+
+### Revenue Model
+- `booking_fee_percent` (5–10%) is the BallR platform cut
+- `platform_fee` = amount × booking_fee_percent / 100
+- `organizer_payout` = amount − platform_fee
+- All payments have simulated Stripe payment intent IDs (`pi_demo_...`)
+- Dashboard endpoint calculates totals automatically
+
+---
+
+## 10. NEW: Venue Cards + King of the Field 👑
+
+### Concept
+Each venue gets a **rich detail card** showing:
+- Cover image, description, address, amenities, surface type
+- Star rating (1-5) from player reviews
+- **King of the Field** — the player with the most wins at that venue
+- Top 3 players leaderboard per venue
+- Upcoming and recent games at that venue
+- Player ratings/reviews
+
+### Data
+| Table | Rows | Description |
+|-------|------|-------------|
+| `venue_kings` | ~400+ | Per-player per-venue win/loss stats |
+| `venue_ratings` | ~200 | Player ratings + comments for venues |
+
+### Sample Kings of the Field
+| Venue | King | Wins | Win Rate |
+|-------|------|------|----------|
+| Pitch Arena Sukhumvit | Kai Andersen | 17 | 51.5% |
+| Benjakitti Park Field 1 | Jake O'Brien | 17 | — |
+| Bangkok Football Club | Kai Andersen | 15 | — |
+| Seminyak Football Club | Boris Doyle | 15 | — |
+| Flick Football K-Village | Maya Chen | 13 | — |
+
+### Venue API Endpoints
+| Endpoint | Description |
+|----------|-------------|
+| `GET /venues` | All venues with king info + city |
+| `GET /venues/:id` | **Full venue card**: description, king, top 3, upcoming games, recent games |
+| `GET /venues/:id/kings` | King of the Field leaderboard (all players ranked by wins) |
+| `GET /venues/:id/games` | Games at venue (`?status=upcoming` or `completed`) |
+| `GET /venues/:id/ratings` | Player ratings/reviews for venue |
+| `GET /games?venue_id=...` | Filter games by venue |
+
+### Venue Card Response Shape (`GET /venues/:id`)
+```json
+{
+  "id": "...",
+  "name": "Pitch Arena Sukhumvit",
+  "description": "Premium turf facility on Sukhumvit Soi 11...",
+  "cover_image_url": "https://...",
+  "surface_type": "turf",
+  "amenities": ["changing_rooms", "showers", "parking", "lights", "bar"],
+  "rating": 4.8,
+  "total_ratings": 67,
+  "total_games": 41,
+  "avg_players_per_game": 12.3,
+  "city": { "name": "Bangkok", ... },
+  "king": { "id": "...", "name": "Kai Andersen", ... },
+
+  "king_of_the_field": {
+    "player": { "id": "...", "name": "Kai Andersen", "elo_rating": 1200, ... },
+    "wins": 17, "losses": 14, "draws": 2, "win_rate": 0.515
+  },
+  "top_3_players": [ ... ],
+  "upcoming_games": [ ... ],
+  "recent_games": [ ... ]
+}
+```
+
+### `venue_kings` table columns
+```
+venue_id, player_id, games_played, wins, losses, draws,
+win_rate, last_played, is_king, created_at
+```
+
+### UI Suggestions for Replit
+1. **Venue Card**: Full-width card with cover image, name overlay, rating stars
+2. **King Badge**: Crown emoji/icon next to king's name with win count
+3. **Venue Leaderboard**: Table with rank, player avatar, name, wins, win rate
+4. **Venue Detail Screen**: Tabs for "Games" / "Leaderboard" / "Reviews"
+5. **Map Integration**: Venues on map with pin showing king's avatar
+
+---
+
+## 11. Quick Test — Verify It Works
+
+```bash
+# Health check (v3.0.0 with all features)
+curl https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/health
+
+# Core
+curl "https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/players?limit=5&city=Bangkok"
+curl "https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/games?status=upcoming&limit=3"
+curl "https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/leaderboard?type=baller&city=Bangkok"
+
+# Venue Cards + King of the Field
+curl "https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/venues"
+curl "https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/venues/{venue_id}"
+curl "https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/venues/{venue_id}/kings"
+curl "https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/venues/{venue_id}/ratings"
+
+# Crews
+curl "https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/crews"
+curl "https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/crews?public=true"
+
+# Leagues
+curl "https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/leagues"
+curl "https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/leagues?featured=true"
+
+# Stats
+curl "https://hjybaxcryvtydktktmis.supabase.co/functions/v1/ballr-api/stats"
+```
+
+All endpoints return JSON. No auth headers needed.
+
+---
+
+## 11. Implementation Priority for Replit
+
+### Phase 1: Replace Mock Data (1-2 days)
+1. Install Supabase client, add credentials
+2. Replace mock imports in Home, Leaderboard, Profile, Game Detail screens
+3. Add loading states and error handling
+
+### Phase 2: Crews UI (2-3 days)
+1. Add "Crews" tab or section in the app
+2. Crew detail screen with members, games, leaderboard
+3. Join-by-invite flow (QR code / share link)
+4. Crew game creation with "Crew Only" toggle
+
+### Phase 3: Leagues UI (3-4 days)
+1. League discovery screen (map + list view)
+2. League detail with schedule, standings, member list
+3. Organizer dashboard (revenue, player stats)
+4. Payment flow UI (Stripe checkout — backend will handle actual Stripe)
+
+---
+
+## 12. Questions? Issues?
+
+If something doesn't match the TypeScript types in `mock.ts`, let me know the exact field name and I'll adjust the database column or add a transformation in the Edge Function.
+
+The backend is **live, tested, and ready**. Your move. 🏗️
