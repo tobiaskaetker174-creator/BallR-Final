@@ -72,6 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) setUser({ ...user, ...updates });
   };
 
+  const isLoggedIn = user !== null;
+
   return (
     <AuthContext.Provider value={{ user, isLoggedIn, login, signup, logout, updateProfile }}>
       {children}
