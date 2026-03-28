@@ -77,6 +77,7 @@ export function transformVenue(v: any): Venue {
     imageUrl: v.image_url ?? v.imageUrl ?? undefined,
     communityLink: v.community_link ?? v.communityLink ?? undefined,
     communityType: v.community_type ?? v.communityType ?? undefined,
+    totalGames: v.total_games ?? v.totalGames ?? undefined,
   };
 }
 
@@ -294,9 +295,9 @@ export function transformCrewMember(m: Record<string, unknown>): CrewMember {
       (player.profile_image_url as string) ??
       undefined,
     role: ((m.role as string) ?? "member") as CrewRole,
-    crewElo: (m.crew_elo as number) ?? 1000,
-    gamesPlayed: (m.games_played as number) ?? (player.games_played as number) ?? 0,
-    gamesWon: (m.games_won as number) ?? (player.games_won as number) ?? 0,
+    crewElo: (m.crew_elo as number) ?? (m.elo as number) ?? 1000,
+    gamesPlayed: (m.games_played as number) ?? (m.total_games as number) ?? (player.games_played as number) ?? (player.total_games as number) ?? 0,
+    gamesWon: (m.games_won as number) ?? (m.wins as number) ?? (player.games_won as number) ?? (player.wins as number) ?? 0,
     joinedAt: (m.joined_at as string) ?? "",
   };
 }

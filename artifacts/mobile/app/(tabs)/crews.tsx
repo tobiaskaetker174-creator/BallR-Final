@@ -54,11 +54,15 @@ function CrewCard({ crew, index }: { crew: Crew; index: number }) {
             <Ionicons name="football-outline" size={12} color={Colors.muted} />
             <Text style={styles.crewStatText}>{crew.gameCount} games</Text>
           </View>
-          <View style={styles.crewStatDot} />
-          <View style={styles.crewStat}>
-            <Ionicons name="trending-up-outline" size={12} color={Colors.muted} />
-            <Text style={styles.crewStatText}>{crew.avgElo} avg ELO</Text>
-          </View>
+          {crew.avgElo !== 1000 && (
+            <>
+              <View style={styles.crewStatDot} />
+              <View style={styles.crewStat}>
+                <Ionicons name="trending-up-outline" size={12} color={Colors.muted} />
+                <Text style={styles.crewStatText}>{crew.avgElo} avg ELO</Text>
+              </View>
+            </>
+          )}
         </View>
       </View>
     </Pressable>

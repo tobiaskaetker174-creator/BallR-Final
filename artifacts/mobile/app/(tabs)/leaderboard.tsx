@@ -164,8 +164,8 @@ function RankRow({ entry, isCurrentUser, mode, eloPeriod }: {
         </View>
         <Text style={styles.rankSub}>
           {isChampionMode
-            ? `${fairnessScore}% reliability · ${entry.gamesPlayed} games`
-            : `${isEloPublic(entry.player, PLAYERS) ? `${entry.player.eloRating} elo · ` : ""}${entry.gamesPlayed} games · ${entry.wins}W`}
+            ? `${fairnessScore}% reliability · ${entry.gamesPlayed} game${entry.gamesPlayed === 1 ? "" : "s"}`
+            : `${isEloPublic(entry.player, PLAYERS) ? `${entry.player.eloRating} elo · ` : ""}${entry.gamesPlayed} game${entry.gamesPlayed === 1 ? "" : "s"} · ${entry.wins}W`}
         </Text>
       </View>
       {isEloMode && isMonthMode ? (

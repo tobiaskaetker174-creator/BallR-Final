@@ -254,7 +254,7 @@ export default function VenueDetailScreen() {
           )}
           <View style={styles.statCell}>
             <Ionicons name="football-outline" size={16} color={Colors.accent} />
-            <Text style={styles.statValue}>{allVenueGames.length}</Text>
+            <Text style={styles.statValue}>{allVenueGames.length || venue.totalGames || 0}</Text>
             <Text style={styles.statLabel}>GAMES HOSTED</Text>
           </View>
           <View style={styles.statCell}>

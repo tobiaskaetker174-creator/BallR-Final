@@ -106,7 +106,7 @@ function EloRangeVisual({
   const pct = Math.max(0, Math.min(1, (currentElo - RANGE_MIN) / (RANGE_MAX - RANGE_MIN)));
   const avgPct = Math.max(0, Math.min(1, (AVG_ELO - RANGE_MIN) / (RANGE_MAX - RANGE_MIN)));
   const playersBelow = PLAYERS.filter((p) => p.eloRating < currentElo).length;
-  const betterThanPct = PLAYERS.length > 1 ? Math.min(100, Math.max(0, Math.round((playersBelow / (PLAYERS.length - 1)) * 100))) : 0;
+  const betterThanPct = PLAYERS.length > 1 ? Math.min(99, Math.max(0, Math.round((playersBelow / (PLAYERS.length - 1)) * 100))) : 0;
   const aboveAvg = currentElo >= AVG_ELO;
 
   return (
@@ -146,7 +146,7 @@ export default function ProfileScreen() {
   const { currentPlayer, eloHistory: liveEloHistory, notifications: liveNotifications } = useBallrData();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
-  const ME = currentPlayer ?? user ?? PLAYERS[0];
+  const ME = user ?? currentPlayer ?? PLAYERS[0];
   const [showReviews, setShowReviews] = useState(false);
   const [showEloInfo, setShowEloInfo] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -201,6 +201,32 @@ export default function ProfileScreen() {
   const winRate = ME.gamesPlayed > 0 ? Math.round((ME.gamesWon / ME.gamesPlayed) * 100) : 0;
   const acceptedReviews = PROFILE_REVIEWS.filter((r) => r.status === "accepted");
   const pendingReviews = PROFILE_REVIEWS.filter((r) => r.status === "pending");
+
+  if (!isLoggedIn) {
+    return (
+      <View style={[styles.container, { paddingTop: topPadding }]}>
+        <View style={styles.headerRow}>
+          <Text style={styles.cityLabel}>BANGKOK</Text>
+          <BallrLogo />
+          <View style={{ width: 36 }} />
+        </View>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40, gap: 14 }}>
+          <Ionicons name="person-circle-outline" size={52} color={Colors.muted} style={{ marginBottom: 8 }} />
+          <Text style={{ fontFamily: "Inter_700Bold", fontSize: 22, color: Colors.text, textAlign: "center" }}>Your Profile</Text>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: Colors.muted, textAlign: "center", lineHeight: 19 }}>
+            Log in to view your profile, stats, ELO rating, and match history.
+          </Text>
+          <Pressable
+            style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 13, borderRadius: 12, marginTop: 6 }}
+            onPress={() => router.push("/auth")}
+          >
+            <Ionicons name="person-outline" size={16} color={Colors.text} />
+            <Text style={{ fontFamily: "Inter_700Bold", fontSize: 14, color: Colors.text }}>Log In to BallR</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <>

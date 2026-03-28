@@ -61,7 +61,7 @@ function LeaderboardRow({ entry }: { entry: CrewLeaderboardEntry }) {
       </View>
       <View style={styles.leaderInfo}>
         <Text style={styles.leaderName} numberOfLines={1}>{entry.playerName}</Text>
-        <Text style={styles.leaderSub}>{entry.gamesPlayed} games · {entry.gamesWon}W</Text>
+        <Text style={styles.leaderSub}>{entry.gamesPlayed} game{entry.gamesPlayed === 1 ? "" : "s"} · {entry.gamesWon}W</Text>
       </View>
       <Text style={[styles.leaderElo, isTop3 && { color: Colors.accent }]}>{entry.crewElo}</Text>
     </Pressable>
@@ -87,7 +87,7 @@ function MemberRow({ member }: { member: CrewMember }) {
       </View>
       <View style={styles.memberInfo}>
         <Text style={styles.memberName}>{member.playerName}</Text>
-        <Text style={styles.memberSub}>{member.crewElo} ELO · {member.gamesPlayed} games</Text>
+        <Text style={styles.memberSub}>{member.crewElo} ELO · {member.gamesPlayed} game{member.gamesPlayed === 1 ? "" : "s"}</Text>
       </View>
       <View style={[styles.roleBadge, { borderColor: roleInfo.color }]}>
         <Text style={[styles.roleBadgeText, { color: roleInfo.color }]}>{roleInfo.label}</Text>
