@@ -4,6 +4,7 @@ import BallrLogo from "@/components/BallrLogo";
 import React, { useState, useEffect } from "react";
 import {
   FlatList,
+  Image,
   Linking,
   Platform,
   Pressable,
@@ -20,7 +21,7 @@ import { useBallrData } from "@/context/BallrDataContext";
 const CITIES = ["Bangkok", "Bali"];
 const MEDAL_ICONS: Record<string, string> = { gold: "🥇", silver: "🥈", bronze: "🥉" };
 
-function PodiumBlock({ entry, rank }: { entry: PotmEntry; rank: number }) {
+function PodiumBlock({ entry, rank, rankMode }: { entry: PotmEntry; rank: number; rankMode?: RankMode }) {
   const isFirst = rank === 1;
   const isSecond = rank === 2;
   const podiumColor = isFirst ? Colors.amber : isSecond ? Colors.muted : "#C4834A";
@@ -47,7 +48,9 @@ function PodiumBlock({ entry, rank }: { entry: PotmEntry; rank: number }) {
       <View style={styles.podiumMeta}>
         {isFirst && (
           <View style={styles.winnerBadge}>
-            <Text style={styles.winnerBadgeText}>BALLER OF THE MONTH</Text>
+            <Text style={styles.winnerBadgeText}>
+              {rankMode === "botm" ? "BALLER OF THE MONTH" : rankMode === "elo" ? "ELO RANKING" : rankMode === "champion" ? "FAIRNESS AWARD" : rankMode === "gotm" ? "GOAL OF THE MONTH" : "BALLER OF THE MONTH"}
+            </Text>
           </View>
         )}
         <Text style={styles.podiumMedal}>{medalIcon}</Text>
@@ -62,12 +65,20 @@ function PodiumBlock({ entry, rank }: { entry: PotmEntry; rank: number }) {
                 backgroundColor: avatarBg,
                 borderWidth: badgeTier ? 3 : isFirst ? 2 : 1,
                 borderColor: badgeTier ? badgeTier.ringColor : isFirst ? Colors.amber : "transparent",
+                overflow: "hidden",
               },
             ]}
           >
-            <Text style={[styles.podiumAvatarInitials, { fontSize: avatarSize * 0.36 }]}>
-              {initials}
-            </Text>
+            {entry.player.profileImageUrl ? (
+              <Image
+                source={{ uri: entry.player.profileImageUrl }}
+                style={{ width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }}
+              />
+            ) : (
+              <Text style={[styles.podiumAvatarInitials, { fontSize: avatarSize * 0.36 }]}>
+                {initials}
+              </Text>
+            )}
           </View>
           {badgeTier && (
             <View style={styles.podiumBadgeIcon}>
@@ -139,10 +150,17 @@ function RankRow({ entry, isCurrentUser, mode, eloPeriod }: {
       </Text>
       <View style={[
         styles.rankAvatar,
-        { backgroundColor: avatarBg },
+        { backgroundColor: avatarBg, overflow: "hidden" },
         badgeTier ? { borderWidth: 2, borderColor: badgeTier.ringColor } : undefined,
       ]}>
-        <Text style={styles.rankAvatarText}>{initials}</Text>
+        {entry.player.profileImageUrl ? (
+          <Image
+            source={{ uri: entry.player.profileImageUrl }}
+            style={{ width: 36, height: 36, borderRadius: 18 }}
+          />
+        ) : (
+          <Text style={styles.rankAvatarText}>{initials}</Text>
+        )}
         {badgeTier && (
           <View style={styles.rankBadgeIcon}>
             <Text style={{ fontSize: 10, lineHeight: 13 }}>{badgeTier.icon}</Text>
@@ -317,7 +335,7 @@ export default function LeaderboardScreen() {
 
             <View style={styles.monthHeader}>
               <Text style={styles.monthSub}>
-                {rankMode === "botm" ? "BALLER OF THE MONTH" : rankMode === "champion" ? "COMMUNITY CHAMPION" : rankMode === "gotm" ? "GOAL OF THE MONTH" : "ELO RANKINGS"}
+                {rankMode === "botm" ? "BALLER OF THE MONTH" : rankMode === "champion" ? "FAIRNESS AWARD" : rankMode === "gotm" ? "GOAL OF THE MONTH" : "ELO RANKING"}
               </Text>
               <Text style={styles.monthTitle}>{rankMode === "botm" ? `${month} ${year}` : rankMode === "champion" ? `${month} ${year}` : rankMode === "gotm" ? `${month} ${year}` : "Rankings"}</Text>
             </View>
@@ -628,9 +646,9 @@ export default function LeaderboardScreen() {
                 )}
 
                 <View style={styles.podiumContainer}>
-                  {top3.length >= 2 && <PodiumBlock entry={top3[1]} rank={top3[1].rank} />}
-                  {top3.length >= 1 && <PodiumBlock entry={top3[0]} rank={top3[0].rank} />}
-                  {top3.length >= 3 && <PodiumBlock entry={top3[2]} rank={top3[2].rank} />}
+                  {top3.length >= 2 && <PodiumBlock entry={top3[1]} rank={top3[1].rank} rankMode={rankMode} />}
+                  {top3.length >= 1 && <PodiumBlock entry={top3[0]} rank={top3[0].rank} rankMode={rankMode} />}
+                  {top3.length >= 3 && <PodiumBlock entry={top3[2]} rank={top3[2].rank} rankMode={rankMode} />}
                 </View>
 
                 <View style={styles.listHeader}>

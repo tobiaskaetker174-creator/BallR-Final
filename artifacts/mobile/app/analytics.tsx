@@ -1,8 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React from "react";
 import {
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -20,7 +19,6 @@ import {
   getEloLabel,
   getReliabilityColor,
   isEloPublic,
-  type Player,
 } from "@/constants/mock";
 import { useAuth } from "@/context/AuthContext";
 
@@ -42,19 +40,11 @@ export default function AnalyticsScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
   const { user, isLoggedIn } = useAuth();
-  const [showRivalPicker, setShowRivalPicker] = useState(false);
-  const [selectedRival, setSelectedRival] = useState<Player | null>(null);
 
   const ME = user ?? PLAYERS[0];
 
   const winRate = ME.gamesPlayed > 0 ? Math.round((ME.gamesWon / ME.gamesPlayed) * 100) : 0;
   const eloTier = getEloLabel(ME.eloRating, ME, PLAYERS);
-
-  const otherPlayers = PLAYERS.filter((p) => !p.isCurrentUser);
-  const rivalData = selectedRival
-    ? RIVALS.find((r) => r.rivalPlayer.id === selectedRival.id)
-    : null;
-  const rivalWinRate = rivalData?.winRate ?? 50;
 
   if (!isLoggedIn) {
     return (
@@ -109,7 +99,7 @@ export default function AnalyticsScreen() {
               icon="flash-outline"
               label="ELO RATING"
               value={`${ME.eloRating}`}
-              sub={`${eloTier.tier} ${eloTier.label}`}
+              sub={eloTier.label ? `${eloTier.tier} ${eloTier.label}` : undefined}
               color={eloTier.color}
             />
             <StatCard
@@ -209,122 +199,45 @@ export default function AnalyticsScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.rivalSectionHeader}>
-            <Text style={styles.sectionTitle}>YOUR RIVAL</Text>
-            <Pressable style={styles.setRivalBtn} onPress={() => setShowRivalPicker(true)}>
-              <Ionicons name="person-add-outline" size={13} color={Colors.accent} />
-              <Text style={styles.setRivalBtnText}>{selectedRival ? "Change" : "Set Rival"}</Text>
-            </Pressable>
-          </View>
-
-          {selectedRival ? (
-            <>
-              <View style={styles.rivalFocusCard}>
-                <View style={styles.rivalFocusTop}>
-                  <View style={[styles.rivalAvatar, { backgroundColor: Colors.red + "33" }]}>
-                    <Text style={[styles.rivalAvatarText, { color: Colors.red }]}>
-                      {selectedRival.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.rivalName}>{selectedRival.name}</Text>
-                    <Text style={styles.rivalSub}>
-                      {isEloPublic(selectedRival, PLAYERS) ? `${selectedRival.eloRating} ELO · ` : ""}
-                      {rivalData ? `${rivalData.timesPlayed} matches` : "Matched opponent"}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() => router.push({ pathname: "/player/[id]", params: { id: selectedRival.id } })}
-                  >
-                    <Ionicons name="chevron-forward" size={16} color={Colors.muted} />
-                  </Pressable>
-                </View>
-
-                <View style={styles.rivalWinRow}>
-                  <View style={styles.rivalWinSide}>
-                    <Text style={[styles.rivalWinPct, { color: rivalWinRate >= 50 ? Colors.accent : Colors.red }]}>
-                      {rivalWinRate}%
-                    </Text>
-                    <Text style={styles.rivalWinLabel}>Your win rate vs them</Text>
-                  </View>
-                  <View style={styles.rivalVsDivider}>
-                    <Text style={styles.rivalVsText}>VS</Text>
-                  </View>
-                  <View style={styles.rivalWinSide}>
-                    <Text style={[styles.rivalWinPct, { color: (100 - rivalWinRate) >= 50 ? Colors.red : Colors.accent }]}>
-                      {100 - rivalWinRate}%
-                    </Text>
-                    <Text style={styles.rivalWinLabel}>Their win rate vs you</Text>
-                  </View>
-                </View>
-
-                <View style={styles.rivalBarOuter}>
-                  <View style={[styles.rivalBarFill, { flex: rivalWinRate / 100, backgroundColor: rivalWinRate >= 50 ? Colors.accent : Colors.red }]} />
-                  <View style={[styles.rivalBarFill, { flex: (100 - rivalWinRate) / 100, backgroundColor: Colors.overlay }]} />
-                </View>
-                {rivalData && (
-                  <Text style={styles.rivalTrend}>
-                    {rivalData.trending === "up" ? "↑ You are improving against them" : rivalData.trending === "down" ? "↓ They have the edge recently" : "→ Evenly matched recently"}
-                  </Text>
-                )}
-              </View>
-            </>
-          ) : (
+          <Text style={styles.sectionTitle}>YOUR RIVALS</Text>
+          <Text style={styles.sectionDesc}>
+            Players you've gone head-to-head against the most.
+          </Text>
+          {RIVALS.length === 0 ? (
             <View style={styles.emptyCard}>
               <Ionicons name="people-outline" size={32} color={Colors.muted} />
-              <Text style={styles.emptyText}>Set a rival to track your head-to-head stats.</Text>
-              <Pressable style={styles.setRivalEmptyBtn} onPress={() => setShowRivalPicker(true)}>
-                <Text style={styles.setRivalEmptyBtnText}>Choose a Rival</Text>
-              </Pressable>
+              <Text style={styles.emptyText}>Play more games to discover your rivals!</Text>
             </View>
+          ) : (
+            RIVALS.map((rival, i) => {
+              const rp = rival.rivalPlayer;
+              const initials = rp.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
+              return (
+                <Pressable
+                  key={i}
+                  style={styles.rivalCard}
+                  onPress={() => router.push({ pathname: "/player/[id]", params: { id: rp.id } })}
+                >
+                  <View style={[styles.rivalAvatar, { backgroundColor: Colors.red + "33" }]}>
+                    <Text style={[styles.rivalAvatarText, { color: Colors.red }]}>{initials}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rivalName}>{rp.name}</Text>
+                    <Text style={styles.rivalSub}>
+                      {isEloPublic(rp, PLAYERS) ? `${rp.eloRating} ELO · ` : ""}
+                      {rival.timesPlayed} matches · {rival.trending === "up" ? "📈" : rival.trending === "down" ? "📉" : "➡️"} {rival.trending}
+                    </Text>
+                  </View>
+                  <View style={styles.teammateWin}>
+                    <Text style={[styles.teammateWinPct, { color: rival.winRate >= 50 ? Colors.accent : Colors.red }]}>{rival.winRate}%</Text>
+                    <Text style={styles.teammateWinLabel}>win</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={14} color={Colors.muted} />
+                </Pressable>
+              );
+            })
           )}
         </View>
-
-        <Modal
-          visible={showRivalPicker}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowRivalPicker(false)}
-        >
-          <Pressable style={styles.pickerOverlay} onPress={() => setShowRivalPicker(false)}>
-            <View style={styles.pickerSheet}>
-              <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>Choose Your Rival</Text>
-                <Pressable onPress={() => setShowRivalPicker(false)}>
-                  <Ionicons name="close" size={20} color={Colors.muted} />
-                </Pressable>
-              </View>
-              <Text style={styles.pickerDesc}>Pick a player you want to track head-to-head.</Text>
-              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 380 }}>
-                {otherPlayers.map((p) => {
-                  const initials = p.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
-                  const isSelected = selectedRival?.id === p.id;
-                  const inRivals = RIVALS.some((r) => r.rivalPlayer.id === p.id);
-                  return (
-                    <Pressable
-                      key={p.id}
-                      style={[styles.pickerRow, isSelected && styles.pickerRowSelected]}
-                      onPress={() => { setSelectedRival(p); setShowRivalPicker(false); }}
-                    >
-                      <View style={[styles.pickerAvatar, { backgroundColor: Colors.red + "33" }]}>
-                        <Text style={[styles.pickerAvatarText, { color: Colors.red }]}>{initials}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.pickerName}>{p.name}</Text>
-                        <Text style={styles.pickerSub}>
-                          {isEloPublic(p, PLAYERS) ? `${p.eloRating} ELO · ` : ""}{p.gamesPlayed} games
-                          {inRivals ? " · Matched before" : ""}
-                        </Text>
-                      </View>
-                      {isSelected && <Ionicons name="checkmark-circle" size={20} color={Colors.accent} />}
-                      {!isSelected && <Ionicons name="chevron-forward" size={16} color={Colors.muted} />}
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          </Pressable>
-        </Modal>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>BEST TEAMMATES</Text>
@@ -561,33 +474,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 19,
   },
-  rivalSectionHeader: {
+  rivalCard: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  setRivalBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: `${Colors.accent}22`,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: `${Colors.accent}33`,
-  },
-  setRivalBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: Colors.accent },
-  rivalFocusCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 14,
     gap: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 13,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: `${Colors.red}22`,
   },
-  rivalFocusTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   rivalAvatar: {
     width: 42,
     height: 42,
@@ -598,66 +495,6 @@ const styles = StyleSheet.create({
   rivalAvatarText: { fontFamily: "Inter_700Bold", fontSize: 14 },
   rivalName: { fontFamily: "Inter_600SemiBold", fontSize: 14, color: Colors.text },
   rivalSub: { fontFamily: "Inter_400Regular", fontSize: 11, color: Colors.muted },
-  rivalWinRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  rivalWinSide: { alignItems: "center", flex: 1 },
-  rivalWinPct: { fontFamily: "Inter_700Bold", fontSize: 28 },
-  rivalWinLabel: { fontFamily: "Inter_400Regular", fontSize: 10, color: Colors.muted, textAlign: "center" },
-  rivalVsDivider: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.overlay,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rivalVsText: { fontFamily: "Inter_700Bold", fontSize: 11, color: Colors.muted },
-  rivalBarOuter: { flexDirection: "row", height: 6, borderRadius: 999, overflow: "hidden" },
-  rivalBarFill: {},
-  rivalTrend: { fontFamily: "Inter_400Regular", fontSize: 11, color: Colors.muted, textAlign: "center" },
-  setRivalEmptyBtn: {
-    backgroundColor: `${Colors.accent}22`,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: `${Colors.accent}44`,
-  },
-  setRivalEmptyBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: Colors.accent },
-  pickerOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.65)", justifyContent: "flex-end" },
-  pickerSheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 34,
-  },
-  pickerHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  pickerTitle: { fontFamily: "Inter_700Bold", fontSize: 16, color: Colors.text },
-  pickerDesc: { fontFamily: "Inter_400Regular", fontSize: 12, color: Colors.muted, marginBottom: 14 },
-  pickerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 11,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.separator,
-  },
-  pickerRowSelected: { backgroundColor: `${Colors.accent}11` },
-  pickerAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pickerAvatarText: { fontFamily: "Inter_700Bold", fontSize: 13 },
-  pickerName: { fontFamily: "Inter_600SemiBold", fontSize: 14, color: Colors.text },
-  pickerSub: { fontFamily: "Inter_400Regular", fontSize: 11, color: Colors.muted },
   teammateCard: {
     flexDirection: "row",
     alignItems: "center",

@@ -362,10 +362,14 @@ export default function GameDetailScreen() {
             style={styles.organizerRow}
             onPress={() => router.push({ pathname: "/player/[id]", params: { id: game.organizer.id } })}
           >
-            <View style={[styles.orgAvatar, { backgroundColor: Colors.primary }]}>
-              <Text style={styles.orgAvatarText}>
-                {game.organizer.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-              </Text>
+            <View style={[styles.orgAvatar, { backgroundColor: Colors.primary, overflow: "hidden" }]}>
+              {game.organizer.profileImageUrl ? (
+                <Image source={{ uri: game.organizer.profileImageUrl }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+              ) : (
+                <Text style={styles.orgAvatarText}>
+                  {game.organizer.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                </Text>
+              )}
             </View>
             <View style={styles.orgInfo}>
               <Text style={styles.orgName}>{game.organizer.name}</Text>
@@ -400,10 +404,14 @@ export default function GameDetailScreen() {
                     style={styles.teamPlayerRow}
                     onPress={() => router.push({ pathname: "/player/[id]", params: { id: b.player.id } })}
                   >
-                    <View style={[styles.miniAvatar, { backgroundColor: Colors.blue + "44" }]}>
-                      <Text style={styles.miniAvatarText}>
-                        {b.player.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                      </Text>
+                    <View style={[styles.miniAvatar, { backgroundColor: Colors.blue + "44", overflow: "hidden" }]}>
+                      {b.player.profileImageUrl ? (
+                        <Image source={{ uri: b.player.profileImageUrl }} style={{ width: 28, height: 28, borderRadius: 14 }} />
+                      ) : (
+                        <Text style={styles.miniAvatarText}>
+                          {b.player.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </Text>
+                      )}
                     </View>
                     <Text style={styles.teamPlayerName} numberOfLines={1}>{b.player.name}</Text>
                     {b.player.medal && (
@@ -426,10 +434,14 @@ export default function GameDetailScreen() {
                     style={styles.teamPlayerRow}
                     onPress={() => router.push({ pathname: "/player/[id]", params: { id: b.player.id } })}
                   >
-                    <View style={[styles.miniAvatar, { backgroundColor: Colors.red + "44" }]}>
-                      <Text style={styles.miniAvatarText}>
-                        {b.player.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                      </Text>
+                    <View style={[styles.miniAvatar, { backgroundColor: Colors.red + "44", overflow: "hidden" }]}>
+                      {b.player.profileImageUrl ? (
+                        <Image source={{ uri: b.player.profileImageUrl }} style={{ width: 28, height: 28, borderRadius: 14 }} />
+                      ) : (
+                        <Text style={styles.miniAvatarText}>
+                          {b.player.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </Text>
+                      )}
                     </View>
                     <Text style={styles.teamPlayerName} numberOfLines={1}>{b.player.name}</Text>
                     {b.player.medal && (
@@ -458,10 +470,14 @@ export default function GameDetailScreen() {
                   style={styles.playerRow}
                   onPress={() => router.push({ pathname: "/player/[id]", params: { id: b.player.id } })}
                 >
-                  <View style={[styles.playerAvatar, { backgroundColor: Colors.primary + "88" }]}>
-                    <Text style={styles.playerAvatarText}>
-                      {b.player.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                    </Text>
+                  <View style={[styles.playerAvatar, { backgroundColor: Colors.primary + "88", overflow: "hidden" }]}>
+                    {b.player.profileImageUrl ? (
+                      <Image source={{ uri: b.player.profileImageUrl }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+                    ) : (
+                      <Text style={styles.playerAvatarText}>
+                        {b.player.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                      </Text>
+                    )}
                   </View>
                   <Text style={styles.playerName} numberOfLines={1}>{b.player.name}</Text>
                   {b.player.medal && (

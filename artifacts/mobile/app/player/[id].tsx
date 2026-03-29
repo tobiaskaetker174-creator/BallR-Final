@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -195,8 +196,16 @@ export default function PlayerProfileScreen() {
             <View style={[
               styles.avatarInner,
               badgeTier ? { borderWidth: 3, borderColor: badgeTier.ringColor } : undefined,
+              { overflow: "hidden" },
             ]}>
-              <Text style={styles.avatarInitials}>{initials}</Text>
+              {player.profileImageUrl ? (
+                <Image
+                  source={{ uri: player.profileImageUrl }}
+                  style={{ width: 80, height: 80, borderRadius: 40 }}
+                />
+              ) : (
+                <Text style={styles.avatarInitials}>{initials}</Text>
+              )}
             </View>
             {badgeTier && (
               <View style={styles.eloBadgeIcon}>
@@ -231,7 +240,7 @@ export default function PlayerProfileScreen() {
             <>
               <View style={[styles.eloChip, { backgroundColor: `${eloTier.color}22` }]}>
                 <Text style={[styles.eloChipText, { color: eloTier.color }]}>
-                  {player.eloRating} ELO · {eloTier.tier} {eloTier.label}
+                  {player.eloRating} ELO{eloTier.label ? ` · ${eloTier.tier} ${eloTier.label}` : ""}
                 </Text>
               </View>
               {(() => {

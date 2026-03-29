@@ -5,7 +5,7 @@ export type Position = "GK" | "DEF" | "MID" | "FWD";
 export type TeamAssignment = "blue" | "red" | "none";
 export type NotificationType = "game_confirmed" | "teams_ready" | "rating_reminder" | "potm" | "no_show" | "game_full" | "new_game" | "carpool_invite" | "game_reminder";
 
-export type EloBadgeTierName = "platinum" | "gold" | "silver" | "bronze";
+export type EloBadgeTierName = "gold" | "silver" | "bronze";
 export interface EloBadgeTier {
   tier: EloBadgeTierName;
   ringColor: string;
@@ -551,6 +551,7 @@ export const PLAYERS: Player[] = [
         eloReached: 960,
       },
     ],
+    profileImageUrl: "https://i.pravatar.cc/200?u=chad",
   },
   {
     id: "p4",
@@ -573,6 +574,7 @@ export const PLAYERS: Player[] = [
     memberSince: "Aug 2025",
     ballerScore: 280,
     eloGainThisMonth: 32,
+    profileImageUrl: "https://i.pravatar.cc/200?u=ying",
   },
   {
     id: "p5",
@@ -595,6 +597,7 @@ export const PLAYERS: Player[] = [
     memberSince: "May 2025",
     ballerScore: 303,
     eloGainThisMonth: 38,
+    profileImageUrl: "https://i.pravatar.cc/200?u=kassim",
   },
   {
     id: "p6",
@@ -617,6 +620,7 @@ export const PLAYERS: Player[] = [
     memberSince: "Sep 2025",
     ballerScore: 291,
     eloGainThisMonth: 28,
+    profileImageUrl: "https://i.pravatar.cc/200?u=ronan",
   },
   {
     id: "p7",
@@ -639,6 +643,7 @@ export const PLAYERS: Player[] = [
     memberSince: "Jul 2025",
     ballerScore: 265,
     eloGainThisMonth: 18,
+    profileImageUrl: "https://i.pravatar.cc/200?u=siraseth",
   },
   {
     id: "p8",
@@ -661,6 +666,7 @@ export const PLAYERS: Player[] = [
     memberSince: "Oct 2025",
     ballerScore: 234,
     eloGainThisMonth: 12,
+    profileImageUrl: "https://i.pravatar.cc/200?u=manon",
   },
   {
     id: "p9",
@@ -683,6 +689,7 @@ export const PLAYERS: Player[] = [
     memberSince: "Nov 2025",
     ballerScore: 218,
     eloGainThisMonth: 8,
+    profileImageUrl: "https://i.pravatar.cc/200?u=tanaka",
   },
   {
     id: "p10",
@@ -705,6 +712,7 @@ export const PLAYERS: Player[] = [
     memberSince: "Dec 2025",
     ballerScore: 195,
     eloGainThisMonth: -5,
+    profileImageUrl: "https://i.pravatar.cc/200?u=chris",
   },
 ];
 
@@ -1182,12 +1190,8 @@ export function getEloLabel(elo: number, player?: Player, allPlayers?: Player[])
     const badge = getEloBadgeTier(player, allPlayers);
     if (badge) return { label: badge.label, tier: badge.icon, color: badge.ringColor };
   }
-  if (elo < 700) return { label: "Novice", tier: "⚽", color: "#8C8782" };
-  if (elo < 900) return { label: "Beginner", tier: "🌱", color: "#A1D494" };
-  if (elo < 1100) return { label: "Recreational", tier: "⚡", color: "#4ABFB0" };
-  if (elo < 1300) return { label: "Competitive", tier: "🔥", color: "#E8A93A" };
-  if (elo < 1500) return { label: "Expert", tier: "💎", color: "#5B8FE8" };
-  return { label: "Champion", tier: "👑", color: "#E8D5A3" };
+  // No badge tier — show plain ELO without a tier label
+  return { label: "", tier: "", color: "#8C8782" };
 }
 
 export function getReliabilityColor(score: number): string {
@@ -1221,9 +1225,8 @@ export function getEloBadgeTier(player: Player, allPlayers: Player[]): EloBadgeT
   const rank = sorted.findIndex((p) => p.id === player.id);
   if (rank < 0) return null;
   const pct = (rank / sorted.length) * 100;
-  if (pct <= 1) return { tier: "platinum", ringColor: "#E8D5A3", icon: "👑", label: "Platinum" };
-  if (pct <= 10) return { tier: "gold", ringColor: "#E8A93A", icon: "⭐", label: "Gold" };
-  if (pct <= 20) return { tier: "silver", ringColor: "#A0A8B8", icon: "🥈", label: "Silver" };
+  if (pct <= 1) return { tier: "gold", ringColor: "#E8A93A", icon: "👑", label: "Gold" };
+  if (pct <= 10) return { tier: "silver", ringColor: "#A0A8B8", icon: "⭐", label: "Silver" };
   if (pct <= 30) return { tier: "bronze", ringColor: "#C4834A", icon: "🥉", label: "Bronze" };
   return null;
 }

@@ -322,7 +322,7 @@ export default function ProfileScreen() {
 
         <View style={[styles.eloChip, { backgroundColor: `${eloTier.color}22`, flexDirection: "row", alignItems: "center", gap: 6 }]}>
           <Text style={[styles.eloChipText, { color: eloTier.color }]}>
-            {ME.eloRating} ELO · {eloTier.tier} {eloTier.label}
+            {ME.eloRating} ELO{eloTier.label ? ` · ${eloTier.tier} ${eloTier.label}` : ""}
           </Text>
           {!eloPublic && (
             <Ionicons name="lock-closed" size={11} color={Colors.muted} />
