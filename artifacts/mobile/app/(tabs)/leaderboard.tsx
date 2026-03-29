@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import BallrLogo from "@/components/BallrLogo";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FlatList,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -15,7 +16,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { POTM_ENTRIES, PotmEntry, PLAYERS, isEloPublic, Player, getFairnessScore, getEloBadgeTier } from "@/constants/mock";
 import { useBallrData } from "@/context/BallrDataContext";
-import { ActivityIndicator } from "react-native";
 
 const CITIES = ["Bangkok", "Bali"];
 const MEDAL_ICONS: Record<string, string> = { gold: "🥇", silver: "🥈", bronze: "🥉" };
@@ -195,7 +195,7 @@ const DROPDOWN_OPTIONS: DropdownOption[] = [
   { id: "botm", label: "Baller of the Month", icon: "🏆" },
   { id: "elo", label: "ELO Ranking", icon: "⚡" },
   { id: "champion", label: "Fairness Award", icon: "🤝" },
-  { id: "gotm", label: "Tor des Monats", icon: "⚽" },
+  { id: "gotm", label: "Goal of the Month", icon: "⚽" },
 ];
 
 export default function LeaderboardScreen() {
@@ -212,7 +212,16 @@ export default function LeaderboardScreen() {
   const [showFormula, setShowFormula] = useState(false);
   const [showFairnessFormula, setShowFairnessFormula] = useState(false);
   const [showEloFormula, setShowEloFormula] = useState(false);
+  const [showGotmFormula, setShowGotmFormula] = useState(false);
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
+
+  // FIX #6: Auto-close all accordions when rankMode changes
+  useEffect(() => {
+    setShowFormula(false);
+    setShowFairnessFormula(false);
+    setShowEloFormula(false);
+    setShowGotmFormula(false);
+  }, [rankMode]);
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
   const cityName = CITIES[city];
@@ -240,14 +249,14 @@ export default function LeaderboardScreen() {
     : rankMode === "champion"
     ? championEntries
     : rankMode === "botm"
-    ? [...activePotm].sort((a, b) => b.potmScore - a.potmScore)
+    ? [...activePotm].sort((a, b) => b.potmScore - a.potmScore).slice(0, 50).map((e, i) => ({ ...e, rank: i + 1 }))
     : eloPeriod === "month"
       ? liveElo.length > 0
-        ? [...liveElo].sort((a, b) => (b.player.eloGainThisMonth ?? 0) - (a.player.eloGainThisMonth ?? 0)).map((e, i) => ({ ...e, rank: i + 1 }))
-        : [...activePotm].sort((a, b) => (b.player.eloGainThisMonth ?? 0) - (a.player.eloGainThisMonth ?? 0)).map((e, i) => ({ ...e, rank: i + 1 }))
+        ? [...liveElo].sort((a, b) => (b.player.eloGainThisMonth ?? 0) - (a.player.eloGainThisMonth ?? 0)).slice(0, 50).map((e, i) => ({ ...e, rank: i + 1 }))
+        : [...activePotm].sort((a, b) => (b.player.eloGainThisMonth ?? 0) - (a.player.eloGainThisMonth ?? 0)).slice(0, 50).map((e, i) => ({ ...e, rank: i + 1 }))
       : liveElo.length > 0
-        ? [...liveElo].sort((a, b) => b.player.eloRating - a.player.eloRating).map((e, i) => ({ ...e, rank: i + 1 }))
-        : [...activePotm].sort((a, b) => b.player.eloRating - a.player.eloRating).map((e, i) => ({ ...e, rank: i + 1 }));
+        ? [...liveElo].sort((a, b) => b.player.eloRating - a.player.eloRating).slice(0, 50).map((e, i) => ({ ...e, rank: i + 1 }))
+        : [...activePotm].sort((a, b) => b.player.eloRating - a.player.eloRating).slice(0, 50).map((e, i) => ({ ...e, rank: i + 1 }));
 
   const top3 = sortedEntries.slice(0, 3);
   const rest = sortedEntries.slice(3);
@@ -308,7 +317,7 @@ export default function LeaderboardScreen() {
 
             <View style={styles.monthHeader}>
               <Text style={styles.monthSub}>
-                {rankMode === "botm" ? "BALLER OF THE MONTH" : rankMode === "champion" ? "COMMUNITY CHAMPION" : rankMode === "gotm" ? "TOR DES MONATS" : "ELO RANKINGS"}
+                {rankMode === "botm" ? "BALLER OF THE MONTH" : rankMode === "champion" ? "COMMUNITY CHAMPION" : rankMode === "gotm" ? "GOAL OF THE MONTH" : "ELO RANKINGS"}
               </Text>
               <Text style={styles.monthTitle}>{rankMode === "botm" ? `${month} ${year}` : rankMode === "champion" ? `${month} ${year}` : rankMode === "gotm" ? `${month} ${year}` : "Rankings"}</Text>
             </View>
@@ -382,6 +391,27 @@ export default function LeaderboardScreen() {
                 <Text style={styles.formulaNote}>
                   Community ratings are factored in but not shown publicly. Rankings update monthly.
                 </Text>
+                <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: Colors.overlay, paddingTop: 12 }}>
+                  <Text style={[styles.formulaFactor, { marginBottom: 8 }]}>🎁 Monthly Rewards</Text>
+                  <View style={styles.championRewards}>
+                    {[
+                      { rank: "🥇 Winner", reward: "T-Shirt + 3 free games" },
+                      { rank: "🥈 2nd Place", reward: "2 free games" },
+                      { rank: "🥉 3rd Place", reward: "1 free game" },
+                    ].map((r, i) => (
+                      <View key={i} style={styles.championRewardRow}>
+                        <Text style={styles.championRewardRank}>{r.rank}</Text>
+                        <View style={styles.championRewardChip}>
+                          <Ionicons name="gift-outline" size={11} color={Colors.amber} />
+                          <Text style={styles.championRewardText}>{r.reward}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <Pressable onPress={() => Linking.openURL("https://ballr-website.vercel.app/blog/baller-of-the-month")} style={styles.learnMoreBtn}>
+                  <Text style={styles.learnMoreText}>Learn more →</Text>
+                </Pressable>
               </View>
             )}
 
@@ -450,6 +480,9 @@ export default function LeaderboardScreen() {
                     ))}
                   </View>
                 </View>
+                <Pressable onPress={() => Linking.openURL("https://ballr-website.vercel.app/blog/fairness-award")} style={styles.learnMoreBtn}>
+                  <Text style={styles.learnMoreText}>Learn more →</Text>
+                </Pressable>
               </View>
             )}
 
@@ -507,6 +540,13 @@ export default function LeaderboardScreen() {
                 <Text style={styles.formulaNote}>
                   This Month view ranks players by ELO gained this month. All Time ranks by current ELO.
                 </Text>
+                <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: Colors.overlay, paddingTop: 12 }}>
+                  <Text style={[styles.formulaFactor, { marginBottom: 8 }]}>Badge Tiers:</Text>
+                  <Text style={styles.formulaWeight}>{"• Top 1% → 👑 Platinum Badge (visible on profile)\n• Top 10% → ⭐ Gold Badge (visible on profile)\n• Top 20% → 🥈 Silver Badge (visible on profile)\n• Top 30% → 🥉 Bronze Badge (visible on profile)\n• Bottom 30% → ELO hidden from public profile (visible privately)"}</Text>
+                </View>
+                <Pressable onPress={() => Linking.openURL("https://ballr-website.vercel.app/blog/elo-ranking")} style={styles.learnMoreBtn}>
+                  <Text style={styles.learnMoreText}>Learn more →</Text>
+                </Pressable>
               </View>
             )}
 
@@ -533,9 +573,9 @@ export default function LeaderboardScreen() {
                     <Text style={styles.gotmComingSoonText}>COMING SOON</Text>
                   </View>
                 </View>
-                <Text style={styles.gotmTitle}>Tor des Monats</Text>
+                <Text style={styles.gotmTitle}>Goal of the Month</Text>
                 <Text style={styles.gotmDesc}>
-                  Nominate and vote on the best goals each month — featuring Pixelot match footage, timestamps, and community voting. Launching soon!
+                  Nominate and vote on the best goals each month — featuring Pixellot match footage, timestamps, and community voting. Launching soon!
                 </Text>
                 <View style={styles.gotmPreviewRow}>
                   {["🥇 127 nominations", "🥈 89 nominations", "🥉 54 nominations"].map((t, i) => (
@@ -544,11 +584,47 @@ export default function LeaderboardScreen() {
                     </View>
                   ))}
                 </View>
+
+                <Pressable
+                  style={styles.formulaToggle}
+                  onPress={() => setShowGotmFormula((v) => !v)}
+                >
+                  <Ionicons name="information-circle-outline" size={14} color={Colors.muted} />
+                  <Text style={styles.formulaToggleText}>How does Goal of the Month work?</Text>
+                  <Ionicons name={showGotmFormula ? "chevron-up" : "chevron-down"} size={13} color={Colors.muted} />
+                </Pressable>
+
+                {showGotmFormula && (
+                  <View style={[styles.formulaCard, { marginHorizontal: 0 }]}>
+                    <Text style={styles.formulaDesc}>
+                      Every game is recorded with Pixellot — tap any moment on the timeline to nominate it as Goal of the Month. Community votes decide the winner each month.
+                    </Text>
+                    <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: Colors.overlay, paddingTop: 10 }}>
+                      <Text style={[styles.formulaFactor, { marginBottom: 8 }]}>🎁 Rewards</Text>
+                      <View style={styles.championRewards}>
+                        {[
+                          { rank: "🥇 Winner", reward: "T-Shirt + 1 free game" },
+                        ].map((r, i) => (
+                          <View key={i} style={styles.championRewardRow}>
+                            <Text style={styles.championRewardRank}>{r.rank}</Text>
+                            <View style={styles.championRewardChip}>
+                              <Ionicons name="gift-outline" size={11} color={Colors.amber} />
+                              <Text style={styles.championRewardText}>{r.reward}</Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                    <Pressable onPress={() => Linking.openURL("https://ballr-website.vercel.app/blog/goal-of-the-month")} style={styles.learnMoreBtn}>
+                      <Text style={styles.learnMoreText}>Learn more →</Text>
+                    </Pressable>
+                  </View>
+                )}
               </View>
             ) : (
               <>
                 {rankMode === "elo" && eloPeriod === "month" && (
-                  <Text style={styles.eloGainerTitle}>Gr{"\u00F6"}{"\u00DF"}te ELO Gainer diesen Monat</Text>
+                  <Text style={styles.eloGainerTitle}>Top ELO Gainers This Month</Text>
                 )}
 
                 <View style={styles.podiumContainer}>
@@ -856,5 +932,14 @@ const styles = StyleSheet.create({
     height: 14,
     alignItems: "center",
     justifyContent: "center",
+  },
+  learnMoreBtn: {
+    marginTop: 10,
+    alignSelf: "flex-start",
+  },
+  learnMoreText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    color: Colors.accent,
   },
 });

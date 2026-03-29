@@ -11,6 +11,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
+  loginAsDemo: () => void;
   logout: () => void;
   updateProfile: (updates: Partial<Player>) => void;
 }
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   login: async () => {},
   signup: async () => {},
+  loginAsDemo: () => {},
   logout: () => {},
   updateProfile: () => {},
 });
@@ -92,6 +94,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const loginAsDemo = () => {
+    setUser({ ...PLAYERS[0], isCurrentUser: true });
+  };
+
   const logout = () => {
     setUser(null);
     AsyncStorage.removeItem(AUTH_STORAGE_KEY).catch(() => {});
@@ -104,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isLoggedIn = user !== null;
 
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn, login, signup, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, isLoggedIn, login, signup, loginAsDemo, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

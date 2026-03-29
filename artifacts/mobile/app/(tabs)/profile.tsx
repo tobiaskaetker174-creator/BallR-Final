@@ -412,7 +412,7 @@ export default function ProfileScreen() {
             Play {calibrationGamesLeft} more game{calibrationGamesLeft !== 1 ? "s" : ""} to unlock your full rating profile.
           </Text>
           <View style={styles.calibrationTrack}>
-            <View style={[styles.calibrationFill, { width: `${(ME.gamesPlayed / CALIBRATION_GAMES) * 100}%` as any }]} />
+            <View style={[styles.calibrationFill, { width: `${Math.round((ME.gamesPlayed / CALIBRATION_GAMES) * 100)}%` as `${number}%` }]} />
           </View>
           <Text style={styles.calibrationCount}>{ME.gamesPlayed}/{CALIBRATION_GAMES} games</Text>
         </View>

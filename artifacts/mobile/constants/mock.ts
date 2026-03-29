@@ -321,7 +321,7 @@ const VENUES: Venue[] = [
     capacity: 14,
     communityLink: "https://chat.whatsapp.com/benjakitti-bkk-fc",
     communityType: "whatsapp",
-    imageUrl: "https://images.unsplash.com/photo-1624880357913-a8539238245b?w=800&q=70",
+    imageUrl: "https://images.unsplash.com/photo-1551958219-acbc608c6377?w=800",
   },
   {
     id: "v2",
@@ -335,7 +335,7 @@ const VENUES: Venue[] = [
     capacity: 12,
     communityLink: "https://t.me/lumpini_football_bkk",
     communityType: "telegram",
-    imageUrl: "https://images.unsplash.com/photo-1556056504-5c7696c4c28d?w=800&q=70",
+    imageUrl: "https://images.unsplash.com/photo-1487466365202-1afdb86c764e?w=800",
   },
   {
     id: "v3",
@@ -349,7 +349,7 @@ const VENUES: Venue[] = [
     capacity: 16,
     communityLink: "https://chat.whatsapp.com/pitcharena-sukhumvit",
     communityType: "whatsapp",
-    imageUrl: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&q=70",
+    imageUrl: "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?w=800",
   },
   {
     id: "v4",
@@ -363,7 +363,7 @@ const VENUES: Venue[] = [
     capacity: 10,
     communityLink: "https://t.me/flick_football_ekkamai",
     communityType: "telegram",
-    imageUrl: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800&q=70",
+    imageUrl: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800",
   },
   {
     id: "v5",
@@ -377,7 +377,7 @@ const VENUES: Venue[] = [
     capacity: 12,
     communityLink: "https://chat.whatsapp.com/seminyak-football-bali",
     communityType: "whatsapp",
-    imageUrl: "https://images.unsplash.com/photo-1518604666860-9ed391f76460?w=800&q=70",
+    imageUrl: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800",
   },
 ];
 
@@ -386,12 +386,12 @@ export const PLAYERS: Player[] = [
     id: "p0",
     name: "Maya",
     nationality: "Thai",
-    eloRating: 820,
+    eloRating: 1350,
     eloCalibrated: true,
-    gamesPlayed: 12,
-    gamesWon: 4,
+    gamesPlayed: 18,
+    gamesWon: 9,
     gamesLost: 6,
-    gamesDrawn: 2,
+    gamesDrawn: 3,
     reliabilityScore: 85,
     noShowCount: 1,
     avgSkillRating: 3.2,

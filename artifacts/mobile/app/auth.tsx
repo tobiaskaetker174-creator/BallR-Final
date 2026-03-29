@@ -21,7 +21,7 @@ type Mode = "login" | "signup";
 
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
-  const { login, signup } = useAuth();
+  const { login, signup, loginAsDemo } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -186,6 +186,17 @@ export default function AuthScreen() {
           onPress={() => router.replace("/(tabs)")}
         >
           <Text style={styles.guestBtnText}>Continue as guest →</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.demoBtn}
+          onPress={() => {
+            loginAsDemo();
+            router.replace("/(tabs)");
+          }}
+        >
+          <Ionicons name="flash-outline" size={14} color={Colors.accent} />
+          <Text style={styles.demoBtnText}>Try as Demo User</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -363,5 +374,24 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     color: Colors.muted,
+  },
+  demoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    backgroundColor: `${Colors.primary}33`,
+    borderRadius: 10,
+    alignSelf: "center",
+    borderWidth: 1,
+    borderColor: `${Colors.accent}33`,
+  },
+  demoBtnText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    color: Colors.accent,
   },
 });
