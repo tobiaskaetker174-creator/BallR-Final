@@ -147,7 +147,7 @@ export default function ProfileScreen() {
   const { currentPlayer, players: apiPlayers, eloHistory: liveEloHistory, notifications: liveNotifications } = useBallrData();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
-  const ME = user ?? currentPlayer ?? PLAYERS[0];
+  const ME = user ? { ...PLAYERS.find(p => p.id === user.id) ?? PLAYERS[0], ...user } : PLAYERS[0];
   const [showReviews, setShowReviews] = useState(false);
   const [showEloInfo, setShowEloInfo] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import {
   Game,
   Player,
+  PLAYERS,
   PotmEntry,
   Notification,
   EloHistoryEntry,
@@ -15,6 +16,7 @@ import {
   fetchPlayers,
 } from "@/lib/ballrApi";
 import { MAYA_CHEN_ID } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 interface BallrData {
   games: Game[];
@@ -51,9 +53,10 @@ const BallrDataContext = createContext<BallrData>({
 });
 
 export function BallrDataProvider({ children }: { children: ReactNode }) {
+  const { user: authUser } = useAuth();
   const [games, setGames] = useState<Game[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
+  const [apiPlayer, setApiPlayer] = useState<Player | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [eloHistory, setEloHistory] = useState<EloHistoryEntry[]>([]);
   const [potmBangkok, setPotmBangkok] = useState<PotmEntry[]>([]);
@@ -101,7 +104,7 @@ export function BallrDataProvider({ children }: { children: ReactNode }) {
         fetchEloHistory(MAYA_CHEN_ID).catch(() => []),
         fetchPlayers("Bangkok", 100).catch(() => fetchPlayers(undefined, 50).catch(() => [])),
       ]);
-      if (player) setCurrentPlayer(player);
+      if (player) setApiPlayer(player);
       if (history.length > 0) setEloHistory(history);
       if (allPlayers.length > 0) setPlayers(allPlayers);
     } catch (e) {
@@ -135,6 +138,11 @@ export function BallrDataProvider({ children }: { children: ReactNode }) {
   const refreshNotifications = async () => {
     await loadNotifications();
   };
+
+  // Always prefer auth user over API player to prevent identity override
+  const currentPlayer: Player | null = authUser
+    ? { ...PLAYERS.find((p) => p.id === authUser.id) ?? PLAYERS[0], ...authUser, eloRating: PLAYERS.find((p) => p.id === authUser.id)?.eloRating ?? PLAYERS[0].eloRating }
+    : apiPlayer;
 
   return (
     <BallrDataContext.Provider

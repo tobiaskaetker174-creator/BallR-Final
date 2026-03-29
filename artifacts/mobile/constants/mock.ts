@@ -347,7 +347,7 @@ const VENUES: Venue[] = [
     capacity: 14,
     communityLink: "https://chat.whatsapp.com/benjakitti-bkk-fc",
     communityType: "whatsapp",
-    imageUrl: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800",
+    imageUrl: "https://images.unsplash.com/photo-1556056504-5c7696c4c28d?w=800",
   },
   {
     id: "v2",
@@ -361,7 +361,7 @@ const VENUES: Venue[] = [
     capacity: 12,
     communityLink: "https://chat.whatsapp.com/lumpini-football-bkk",
     communityType: "whatsapp",
-    imageUrl: "https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800",
+    imageUrl: "https://images.unsplash.com/photo-1518604666860-9ed391f76460?w=800",
   },
   {
     id: "v3",

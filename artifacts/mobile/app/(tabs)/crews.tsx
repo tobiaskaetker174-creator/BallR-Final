@@ -188,7 +188,7 @@ export default function CrewsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  const playerId = user?.id ?? currentPlayer?.id ?? "p0";
+  const playerId = user?.id ?? "p0";
   const myLeagues = useMemo(() => getPlayerLeagues(playerId), [playerId]);
   const allLeagues = LEAGUES;
 

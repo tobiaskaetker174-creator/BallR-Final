@@ -24,8 +24,8 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   return (
-    <BallrDataProvider>
     <AuthProvider>
+    <BallrDataProvider>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -58,8 +58,8 @@ function RootLayoutNav() {
         <Stack.Screen name="match-stats/[id]" options={{ headerShown: false, presentation: "card" }} />
         <Stack.Screen name="notification-settings" options={{ headerShown: false, presentation: "card" }} />
       </Stack>
-    </AuthProvider>
     </BallrDataProvider>
+    </AuthProvider>
   );
 }
 

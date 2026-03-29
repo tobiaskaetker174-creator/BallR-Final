@@ -144,7 +144,7 @@ export default function LeagueDetailScreen() {
   const { currentPlayer } = useBallrData();
   const { user } = useAuth();
 
-  const playerId = user?.id ?? currentPlayer?.id ?? "p0";
+  const playerId = user?.id ?? "p0";
   const league = LEAGUES.find((l) => l.id === id);
   const isMember = league ? isLeagueMember(league.id, playerId) : false;
 

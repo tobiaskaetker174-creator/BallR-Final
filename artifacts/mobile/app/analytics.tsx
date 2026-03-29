@@ -44,7 +44,7 @@ export default function AnalyticsScreen() {
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
   const { user, isLoggedIn } = useAuth();
 
-  const ME = user ?? PLAYERS[0];
+  const ME = user ? { ...PLAYERS[0], ...user, eloRating: PLAYERS[0].eloRating } : PLAYERS[0];
 
   // League toggle state: null = city-wide (Bangkok), or a league object
   const myLeagues = useMemo(() => getPlayerLeagues(ME.id), [ME.id]);
