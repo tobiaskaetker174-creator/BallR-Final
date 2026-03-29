@@ -70,10 +70,14 @@ export default function AuthScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.logo}>
+          {/* BallR icon — green circle with dark cutout */}
           <View style={styles.logoBall}>
-            <Text style={styles.logoBallIcon}>⚽</Text>
+            <View style={styles.logoCutout} />
           </View>
-          <Text style={styles.logoText}>BALLR</Text>
+          <View style={styles.logoNameRow}>
+            <Text style={styles.logoTextBall}>Ball</Text>
+            <Text style={styles.logoTextR}>R</Text>
+          </View>
           <Text style={styles.logoSub}>Pickup football, perfected.</Text>
         </View>
 
@@ -206,21 +210,35 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: Colors.accent,
     marginBottom: 6,
-    borderWidth: 2,
-    borderColor: Colors.accent,
+    position: "relative" as const,
+    overflow: "hidden" as const,
   },
-  logoBallIcon: {
-    fontSize: 32,
+  logoCutout: {
+    position: "absolute" as const,
+    top: 3,
+    left: 3,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#2D5A27",
   },
-  logoText: {
+  logoNameRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+  },
+  logoTextBall: {
     fontFamily: "Inter_700Bold",
     fontSize: 32,
     color: Colors.text,
-    letterSpacing: 5,
+    letterSpacing: 3,
+  },
+  logoTextR: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 32,
+    color: Colors.accent,
+    letterSpacing: 3,
   },
   logoSub: {
     fontFamily: "Inter_400Regular",

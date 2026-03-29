@@ -8,13 +8,38 @@ type BallrLogoProps = {
 
 export default function BallrLogo({ size = "md" }: BallrLogoProps) {
   const fontSize = size === "sm" ? 14 : size === "lg" ? 24 : 18;
-  const dotSize = size === "sm" ? 6 : size === "lg" ? 10 : 8;
+  const iconSize = size === "sm" ? 16 : size === "lg" ? 28 : 22;
+  const cutoutSize = iconSize * 0.55;
+  const cutoutOffset = iconSize * 0.05;
 
   return (
     <View style={styles.row}>
-      <View style={[styles.dot, { width: dotSize, height: dotSize, borderRadius: dotSize / 2 }]} />
-      <Text style={[styles.b, { fontSize }]}>B</Text>
-      <Text style={[styles.allr, { fontSize }]}>ALLR</Text>
+      {/* Green circle with darker cutout — the BallR icon */}
+      <View
+        style={[
+          styles.iconCircle,
+          {
+            width: iconSize,
+            height: iconSize,
+            borderRadius: iconSize / 2,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.iconCutout,
+            {
+              width: cutoutSize,
+              height: cutoutSize,
+              borderRadius: cutoutSize / 2,
+              top: cutoutOffset,
+              left: cutoutOffset,
+            },
+          ]}
+        />
+      </View>
+      <Text style={[styles.ballText, { fontSize }]}>Ball</Text>
+      <Text style={[styles.rText, { fontSize }]}>R</Text>
     </View>
   );
 }
@@ -23,20 +48,26 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 1,
+    gap: 0,
   },
-  dot: {
+  iconCircle: {
     backgroundColor: Colors.accent,
-    marginRight: 3,
+    marginRight: 6,
+    position: "relative",
+    overflow: "hidden",
   },
-  b: {
-    fontFamily: "Inter_700Bold",
-    color: Colors.accent,
-    letterSpacing: 2,
+  iconCutout: {
+    position: "absolute",
+    backgroundColor: "#2D5A27",
   },
-  allr: {
+  ballText: {
     fontFamily: "Inter_700Bold",
     color: Colors.text,
-    letterSpacing: 2,
+    letterSpacing: 1,
+  },
+  rText: {
+    fontFamily: "Inter_700Bold",
+    color: Colors.accent,
+    letterSpacing: 1,
   },
 });
