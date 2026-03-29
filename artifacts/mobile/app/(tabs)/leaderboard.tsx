@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import BallrLogo from "@/components/BallrLogo";
+import WebImage from "@/components/WebImage";
 import React, { useState, useEffect } from "react";
 import {
   FlatList,
-  Image,
   Linking,
   Platform,
   Pressable,
@@ -70,10 +70,7 @@ function PodiumBlock({ entry, rank, rankMode }: { entry: PotmEntry; rank: number
             ]}
           >
             {entry.player.profileImageUrl ? (
-              <Image
-                source={{ uri: entry.player.profileImageUrl }}
-                style={{ width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }}
-              />
+              <WebImage uri={entry.player.profileImageUrl} style={{ width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }} />
             ) : (
               <Text style={[styles.podiumAvatarInitials, { fontSize: avatarSize * 0.36 }]}>
                 {initials}
@@ -154,10 +151,7 @@ function RankRow({ entry, isCurrentUser, mode, eloPeriod }: {
         badgeTier ? { borderWidth: 2, borderColor: badgeTier.ringColor } : undefined,
       ]}>
         {entry.player.profileImageUrl ? (
-          <Image
-            source={{ uri: entry.player.profileImageUrl }}
-            style={{ width: 36, height: 36, borderRadius: 18 }}
-          />
+          <WebImage uri={entry.player.profileImageUrl} style={{ width: 36, height: 36, borderRadius: 18 }} />
         ) : (
           <Text style={styles.rankAvatarText}>{initials}</Text>
         )}

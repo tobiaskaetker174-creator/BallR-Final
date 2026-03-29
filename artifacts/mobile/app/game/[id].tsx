@@ -1,5 +1,6 @@
 import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import WebImage from "@/components/WebImage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { ComponentProps, useEffect, useState } from "react";
@@ -236,11 +237,15 @@ export default function GameDetailScreen() {
         contentContainerStyle={{ paddingBottom: bottomPadding + 90 }}
       >
         <View style={styles.heroContainer}>
-          <Image
-            source={game.venue.imageUrl ? { uri: game.venue.imageUrl } : require("../../assets/images/venue_pitch.jpg")}
-            style={styles.heroImage}
-            resizeMode="cover"
-          />
+          {game.venue.imageUrl ? (
+            <WebImage uri={game.venue.imageUrl} style={styles.heroImage} />
+          ) : (
+            <Image
+              source={require("../../assets/images/venue_pitch.jpg")}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          )}
           <LinearGradient
             colors={["rgba(20,19,18,0.3)", "rgba(20,19,18,0.95)"]}
             style={styles.heroGradient}
@@ -372,7 +377,7 @@ export default function GameDetailScreen() {
           >
             <View style={[styles.orgAvatar, { backgroundColor: Colors.primary, overflow: "hidden" }]}>
               {game.organizer.profileImageUrl ? (
-                <Image source={{ uri: game.organizer.profileImageUrl }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                <WebImage uri={game.organizer.profileImageUrl} style={{ width: 40, height: 40, borderRadius: 20 }} />
               ) : (
                 <Text style={styles.orgAvatarText}>
                   {game.organizer.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
@@ -414,7 +419,7 @@ export default function GameDetailScreen() {
                   >
                     <View style={[styles.miniAvatar, { backgroundColor: Colors.blue + "44", overflow: "hidden" }]}>
                       {b.player.profileImageUrl ? (
-                        <Image source={{ uri: b.player.profileImageUrl }} style={{ width: 28, height: 28, borderRadius: 14 }} />
+                        <WebImage uri={b.player.profileImageUrl} style={{ width: 28, height: 28, borderRadius: 14 }} />
                       ) : (
                         <Text style={styles.miniAvatarText}>
                           {b.player.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
@@ -444,7 +449,7 @@ export default function GameDetailScreen() {
                   >
                     <View style={[styles.miniAvatar, { backgroundColor: Colors.red + "44", overflow: "hidden" }]}>
                       {b.player.profileImageUrl ? (
-                        <Image source={{ uri: b.player.profileImageUrl }} style={{ width: 28, height: 28, borderRadius: 14 }} />
+                        <WebImage uri={b.player.profileImageUrl} style={{ width: 28, height: 28, borderRadius: 14 }} />
                       ) : (
                         <Text style={styles.miniAvatarText}>
                           {b.player.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
@@ -480,7 +485,7 @@ export default function GameDetailScreen() {
                 >
                   <View style={[styles.playerAvatar, { backgroundColor: Colors.primary + "88", overflow: "hidden" }]}>
                     {b.player.profileImageUrl ? (
-                      <Image source={{ uri: b.player.profileImageUrl }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+                      <WebImage uri={b.player.profileImageUrl} style={{ width: 32, height: 32, borderRadius: 16 }} />
                     ) : (
                       <Text style={styles.playerAvatarText}>
                         {b.player.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
@@ -798,7 +803,7 @@ export default function GameDetailScreen() {
                                 <View key={ni} style={styles.pitchPlayerDot}>
                                   <View style={[styles.pitchDotCircle, { borderColor: Colors.accent, borderWidth: 2 }]}>
                                     {p?.profileImageUrl ? (
-                                      <Image source={{ uri: p.profileImageUrl }} style={styles.pitchDotImage} />
+                                      <WebImage uri={p.profileImageUrl} style={styles.pitchDotImage} />
                                     ) : (
                                       <Text style={styles.pitchDotText}>{name.split(" ")[0].slice(0, 3)}</Text>
                                     )}
@@ -841,7 +846,7 @@ export default function GameDetailScreen() {
                                 <View key={ni} style={styles.pitchPlayerDot}>
                                   <View style={[styles.pitchDotCircle, { borderColor: Colors.red, borderWidth: 2 }]}>
                                     {p?.profileImageUrl ? (
-                                      <Image source={{ uri: p.profileImageUrl }} style={styles.pitchDotImage} />
+                                      <WebImage uri={p.profileImageUrl} style={styles.pitchDotImage} />
                                     ) : (
                                       <Text style={styles.pitchDotText}>{name.split(" ")[0].slice(0, 3)}</Text>
                                     )}

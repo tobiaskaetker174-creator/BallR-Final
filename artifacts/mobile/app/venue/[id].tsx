@@ -1,11 +1,11 @@
 import { Ionicons, Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import WebImage from "@/components/WebImage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { ComponentProps, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Linking,
   Platform,
   Pressable,
@@ -197,11 +197,7 @@ export default function VenueDetailScreen() {
       >
         <View style={styles.hero}>
           {venue.imageUrl ? (
-            <Image
-              source={{ uri: venue.imageUrl }}
-              style={styles.heroImage}
-              resizeMode="cover"
-            />
+            <WebImage uri={venue.imageUrl} style={styles.heroImage} />
           ) : (
             <>
               <LinearGradient

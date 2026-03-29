@@ -1,9 +1,9 @@
 import { Ionicons, Feather } from "@expo/vector-icons";
+import WebImage from "@/components/WebImage";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Modal,
   Platform,
   Pressable,
@@ -199,10 +199,7 @@ export default function PlayerProfileScreen() {
               { overflow: "hidden" },
             ]}>
               {player.profileImageUrl ? (
-                <Image
-                  source={{ uri: player.profileImageUrl }}
-                  style={{ width: 80, height: 80, borderRadius: 40 }}
-                />
+                <WebImage uri={player.profileImageUrl} style={{ width: 80, height: 80, borderRadius: 40 }} />
               ) : (
                 <Text style={styles.avatarInitials}>{initials}</Text>
               )}

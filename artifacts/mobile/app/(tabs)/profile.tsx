@@ -1,9 +1,9 @@
 import { Ionicons, Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import WebImage from "@/components/WebImage";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Image,
   Modal,
   Platform,
   Pressable,
@@ -59,10 +59,7 @@ function BigAvatar({ name, size = 90, imageUri, ringColor, showBadgeIcon }: { na
   return (
     <View style={[styles.bigAvatarOuter, { width: outerSize, height: outerSize, borderRadius: outerSize / 2 }, ringColor ? { borderColor: ringColor, borderWidth: 3 } : undefined]}>
       {imageUri ? (
-        <Image
-          source={{ uri: imageUri }}
-          style={[styles.bigAvatarInner, { width: size, height: size, borderRadius: size / 2 }]}
-        />
+        <WebImage uri={imageUri} style={[styles.bigAvatarInner, { width: size, height: size, borderRadius: size / 2 }]} />
       ) : (
         <View style={[styles.bigAvatarInner, { width: size, height: size, borderRadius: size / 2 }]}>
           <Text style={[styles.bigAvatarInitials, { fontSize: size * 0.36 }]}>{initials}</Text>
@@ -271,11 +268,7 @@ export default function ProfileScreen() {
         {/* Banner */}
         <View style={styles.bannerContainer}>
           {(localBannerUri ?? ME.bannerImageUrl) ? (
-            <Image
-              source={{ uri: localBannerUri ?? ME.bannerImageUrl! }}
-              style={styles.bannerImage}
-              resizeMode="cover"
-            />
+            <WebImage uri={(localBannerUri ?? ME.bannerImageUrl)!} style={styles.bannerImage} />
           ) : (
             <View style={styles.bannerPlaceholder} />
           )}
@@ -718,10 +711,7 @@ export default function ProfileScreen() {
               onPress={pickAvatar}
             >
               {(localAvatarUri ?? ME.profileImageUrl) ? (
-                <Image
-                  source={{ uri: localAvatarUri ?? ME.profileImageUrl! }}
-                  style={{ width: 48, height: 48, borderRadius: 24 }}
-                />
+                <WebImage uri={(localAvatarUri ?? ME.profileImageUrl)!} style={{ width: 48, height: 48, borderRadius: 24 }} />
               ) : (
                 <Ionicons name="person-circle-outline" size={32} color={Colors.muted} />
               )}
@@ -732,11 +722,7 @@ export default function ProfileScreen() {
               onPress={pickBanner}
             >
               {(localBannerUri ?? ME.bannerImageUrl) ? (
-                <Image
-                  source={{ uri: localBannerUri ?? ME.bannerImageUrl! }}
-                  style={styles.bannerThumbImg}
-                  resizeMode="cover"
-                />
+                <WebImage uri={(localBannerUri ?? ME.bannerImageUrl)!} style={styles.bannerThumbImg} />
               ) : (
                 <>
                   <Ionicons name="image-outline" size={22} color={Colors.muted} />

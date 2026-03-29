@@ -2,13 +2,13 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import BallrLogo from "@/components/BallrLogo";
 import GameMapView from "@/components/GameMapView";
+import WebImage from "@/components/WebImage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useNavigation } from "expo-router";
 import React, { ComponentProps, useState, useMemo, useEffect, useCallback } from "react";
 import {
   Alert,
   FlatList,
-  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -490,15 +490,7 @@ export default function DiscoverScreen() {
                 style={styles.featuredCard}
                 onPress={() => router.push({ pathname: "/game/[id]", params: { id: featuredGame.id } })}
               >
-                {Platform.OS === "web" ? (
-                  <View style={[styles.featuredImage, { backgroundImage: `url(${featuredGame.venue.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" } as any]} />
-                ) : (
-                  <Image
-                    source={{ uri: featuredGame.venue.imageUrl }}
-                    style={styles.featuredImage}
-                    resizeMode="cover"
-                  />
-                )}
+                <WebImage uri={featuredGame.venue.imageUrl} style={styles.featuredImage} />
                 <LinearGradient
                   colors={["transparent", "rgba(20,19,18,0.95)"]}
                   style={styles.featuredGradient}
