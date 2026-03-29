@@ -491,7 +491,7 @@ export default function DiscoverScreen() {
                 onPress={() => router.push({ pathname: "/game/[id]", params: { id: featuredGame.id } })}
               >
                 <Image
-                  source={require("../../assets/images/featured_pitch.jpg")}
+                  source={{ uri: featuredGame.venue.imageUrl }}
                   style={styles.featuredImage}
                   resizeMode="cover"
                 />

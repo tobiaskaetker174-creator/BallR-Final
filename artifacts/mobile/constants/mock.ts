@@ -347,7 +347,7 @@ const VENUES: Venue[] = [
     capacity: 14,
     communityLink: "https://chat.whatsapp.com/benjakitti-bkk-fc",
     communityType: "whatsapp",
-    imageUrl: "https://images.unsplash.com/photo-1624456735729-03594a40c5fb?w=800",
+    imageUrl: "https://images.pexels.com/photos/1171084/pexels-photo-1171084.jpeg?auto=compress&cs=tinysrgb&w=800",
   },
   {
     id: "v2",
@@ -361,7 +361,7 @@ const VENUES: Venue[] = [
     capacity: 12,
     communityLink: "https://t.me/lumpini_football_bkk",
     communityType: "telegram",
-    imageUrl: "https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=800",
+    imageUrl: "https://images.pexels.com/photos/3621104/pexels-photo-3621104.jpeg?auto=compress&cs=tinysrgb&w=800",
   },
   {
     id: "v3",
@@ -375,7 +375,7 @@ const VENUES: Venue[] = [
     capacity: 16,
     communityLink: "https://chat.whatsapp.com/pitcharena-sukhumvit",
     communityType: "whatsapp",
-    imageUrl: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800",
+    imageUrl: "https://images.pexels.com/photos/399187/pexels-photo-399187.jpeg?auto=compress&cs=tinysrgb&w=800",
   },
   {
     id: "v4",
@@ -389,7 +389,7 @@ const VENUES: Venue[] = [
     capacity: 10,
     communityLink: "https://t.me/flick_football_ekkamai",
     communityType: "telegram",
-    imageUrl: "https://images.unsplash.com/photo-1596464716127-f2a82984de30?w=800",
+    imageUrl: "https://images.pexels.com/photos/2291006/pexels-photo-2291006.jpeg?auto=compress&cs=tinysrgb&w=800",
   },
   {
     id: "v5",
@@ -403,7 +403,7 @@ const VENUES: Venue[] = [
     capacity: 12,
     communityLink: "https://chat.whatsapp.com/seminyak-football-bali",
     communityType: "whatsapp",
-    imageUrl: "https://images.unsplash.com/photo-1518604666860-9ed391f76460?w=800",
+    imageUrl: "https://images.pexels.com/photos/1667583/pexels-photo-1667583.jpeg?auto=compress&cs=tinysrgb&w=800",
   },
 ];
 

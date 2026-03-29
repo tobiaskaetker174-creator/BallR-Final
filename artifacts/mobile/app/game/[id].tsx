@@ -288,10 +288,18 @@ export default function GameDetailScreen() {
             <Text style={styles.eloStripNum}>⚡ {computedMinElo}–{computedMaxElo} · Avg {computedAvgElo}</Text>
           </View>
           {(() => {
-            const myElo = user?.eloRating ?? PLAYERS[0].eloRating;
-            const rangeSpan = computedMaxElo - computedMinElo || 1;
-            const myMarkerPct = Math.max(2, Math.min(96, ((myElo - computedMinElo) / rangeSpan) * 100));
-            const avgMarkerPct = Math.max(2, Math.min(96, ((computedAvgElo - computedMinElo) / rangeSpan) * 100));
+            // Always use current user's ELO from auth context or fresh PLAYERS[0]
+            const myElo = user?.eloRating ?? 1350;
+            // Expand range to include user's ELO if outside game range
+            const rangeMin = Math.min(computedMinElo, myElo);
+            const rangeMax = Math.max(computedMaxElo, myElo);
+            const rangeSpan = rangeMax - rangeMin || 1;
+            // Calculate positions as percentage of expanded range
+            const myMarkerPct = Math.max(2, Math.min(98, ((myElo - rangeMin) / rangeSpan) * 100));
+            const avgMarkerPct = Math.max(2, Math.min(98, ((computedAvgElo - rangeMin) / rangeSpan) * 100));
+            // Fill bar goes from left edge to user's position
+            const fillPct = myMarkerPct;
+            // Calculate percentile vs signed-up players
             const playersBelow = bookingElos.filter((e) => e < myElo).length;
             const pctBetter = bookingElos.length > 0
               ? Math.round((playersBelow / bookingElos.length) * 100)
@@ -302,9 +310,9 @@ export default function GameDetailScreen() {
             return (
               <View style={styles.eloRangeTrackContainer}>
                 <View style={styles.eloRangeTrack}>
-                  <View style={[styles.eloRangeFill, { width: `${myMarkerPct}%` as `${number}%` }]} />
-                  <View style={[styles.eloRangeAvgLine, { left: `${avgMarkerPct}%` as `${number}%` }]} />
-                  <View style={[styles.eloRangeMarkerLine, { left: `${myMarkerPct}%` as `${number}%` }]}>
+                  <View style={[styles.eloRangeFill, { width: `${Math.round(fillPct)}%` as `${number}%` }]} />
+                  <View style={[styles.eloRangeAvgLine, { left: `${Math.round(avgMarkerPct)}%` as `${number}%` }]} />
+                  <View style={[styles.eloRangeMarkerLine, { left: `${Math.round(myMarkerPct)}%` as `${number}%` }]}>
                     <View style={styles.eloRangeMarkerDot} />
                   </View>
                 </View>

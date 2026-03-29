@@ -29,20 +29,33 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Player | null>(null);
 
-  // Restore persisted auth state on mount
+  // Restore persisted auth state on mount — auto-login as demo user if no saved session
   useEffect(() => {
     AsyncStorage.getItem(AUTH_STORAGE_KEY)
       .then((stored) => {
         if (stored) {
           try {
             const parsed = JSON.parse(stored) as Player;
-            setUser(parsed);
+            // Ensure persisted user always has fresh ELO from PLAYERS[0]
+            if (parsed.id === "p0") {
+              setUser({ ...PLAYERS[0], isCurrentUser: true });
+            } else {
+              setUser(parsed);
+            }
           } catch {
             AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+            // Auto-login as demo user
+            setUser({ ...PLAYERS[0], isCurrentUser: true });
           }
+        } else {
+          // No saved session — auto-login as demo user
+          setUser({ ...PLAYERS[0], isCurrentUser: true });
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Storage error — auto-login as demo user
+        setUser({ ...PLAYERS[0], isCurrentUser: true });
+      });
   }, []);
 
   // Persist user whenever it changes
