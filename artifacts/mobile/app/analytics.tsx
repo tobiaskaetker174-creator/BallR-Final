@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
+import React, { useState, useMemo } from "react";
 import {
   Platform,
   Pressable,
@@ -19,6 +19,9 @@ import {
   getEloLabel,
   getReliabilityColor,
   isEloPublic,
+  getPlayerLeagues,
+  LEAGUE_GAMES,
+  League,
 } from "@/constants/mock";
 import { useAuth } from "@/context/AuthContext";
 
@@ -43,7 +46,88 @@ export default function AnalyticsScreen() {
 
   const ME = user ?? PLAYERS[0];
 
-  const winRate = ME.gamesPlayed > 0 ? Math.round((ME.gamesWon / ME.gamesPlayed) * 100) : 0;
+  // League toggle state: null = city-wide (Bangkok), or a league object
+  const myLeagues = useMemo(() => getPlayerLeagues(ME.id), [ME.id]);
+  const privateLeagues = useMemo(() => myLeagues.filter((l) => l.type === "private"), [myLeagues]);
+  const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
+
+  // Compute stats based on selected league or city-wide
+  const leagueStats = useMemo(() => {
+    if (!selectedLeague) {
+      // City-wide stats — use existing player data
+      return {
+        gamesPlayed: ME.gamesPlayed,
+        gamesWon: ME.gamesWon,
+        gamesLost: ME.gamesLost,
+        gamesDrawn: ME.gamesDrawn,
+        winRate: ME.gamesPlayed > 0 ? Math.round((ME.gamesWon / ME.gamesPlayed) * 100) : 0,
+      };
+    }
+    // League-specific stats
+    const leagueGames = LEAGUE_GAMES.filter(
+      (g) => g.leagueId === selectedLeague.id && g.status === "completed"
+    );
+    let wins = 0;
+    let losses = 0;
+    let draws = 0;
+    leagueGames.forEach((game) => {
+      const myBooking = game.bookings.find((b) => b.player.id === ME.id);
+      if (!myBooking) return;
+      const myTeam = myBooking.teamAssignment;
+      if (game.winningTeam === "draw") {
+        draws++;
+      } else if (game.winningTeam === myTeam) {
+        wins++;
+      } else if (game.winningTeam) {
+        losses++;
+      }
+    });
+    const played = wins + losses + draws;
+    return {
+      gamesPlayed: played,
+      gamesWon: wins,
+      gamesLost: losses,
+      gamesDrawn: draws,
+      winRate: played > 0 ? Math.round((wins / played) * 100) : 0,
+    };
+  }, [selectedLeague, ME.id, ME.gamesPlayed, ME.gamesWon, ME.gamesLost, ME.gamesDrawn]);
+
+  // Compute league-specific rivals
+  const leagueRivals = useMemo(() => {
+    if (!selectedLeague) return RIVALS;
+    const leagueGames = LEAGUE_GAMES.filter(
+      (g) => g.leagueId === selectedLeague.id && g.status === "completed"
+    );
+    const rivalMap = new Map<string, { opponent: typeof PLAYERS[0]; wins: number; total: number }>();
+    leagueGames.forEach((game) => {
+      const myBooking = game.bookings.find((b) => b.player.id === ME.id);
+      if (!myBooking) return;
+      const myTeam = myBooking.teamAssignment;
+      const opponents = game.bookings.filter((b) => b.teamAssignment !== myTeam && b.teamAssignment !== "none");
+      const didWin = game.winningTeam === myTeam;
+      opponents.forEach((opp) => {
+        const existing = rivalMap.get(opp.player.id);
+        if (existing) {
+          existing.total++;
+          if (didWin) existing.wins++;
+        } else {
+          rivalMap.set(opp.player.id, { opponent: opp.player, wins: didWin ? 1 : 0, total: 1 });
+        }
+      });
+    });
+    return Array.from(rivalMap.values())
+      .filter((r) => r.total >= 2)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5)
+      .map((r) => ({
+        rivalPlayer: r.opponent,
+        winRate: r.total > 0 ? Math.round((r.wins / r.total) * 100) : 0,
+        timesPlayed: r.total,
+        trending: "stable" as const,
+      }));
+  }, [selectedLeague, ME.id]);
+
+  const winRate = leagueStats.winRate;
   const eloTier = getEloLabel(ME.eloRating, ME, PLAYERS);
 
   if (!isLoggedIn) {
@@ -81,6 +165,56 @@ export default function AnalyticsScreen() {
         <View style={styles.navBtn} />
       </View>
 
+      {privateLeagues.length > 0 && (
+        <View style={styles.leagueToggleRow}>
+          <Pressable
+            style={[
+              styles.leagueToggleBtn,
+              !selectedLeague && styles.leagueToggleBtnActive,
+            ]}
+            onPress={() => setSelectedLeague(null)}
+          >
+            <Ionicons
+              name="globe-outline"
+              size={13}
+              color={!selectedLeague ? Colors.base : Colors.muted}
+            />
+            <Text
+              style={[
+                styles.leagueToggleText,
+                !selectedLeague && styles.leagueToggleTextActive,
+              ]}
+            >
+              Bangkok
+            </Text>
+          </Pressable>
+          {privateLeagues.map((league) => (
+            <Pressable
+              key={league.id}
+              style={[
+                styles.leagueToggleBtn,
+                selectedLeague?.id === league.id && styles.leagueToggleBtnActive,
+              ]}
+              onPress={() => setSelectedLeague(league)}
+            >
+              <Ionicons
+                name="shield-outline"
+                size={13}
+                color={selectedLeague?.id === league.id ? Colors.base : Colors.muted}
+              />
+              <Text
+                style={[
+                  styles.leagueToggleText,
+                  selectedLeague?.id === league.id && styles.leagueToggleTextActive,
+                ]}
+              >
+                {league.name}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding + 30, gap: 0 }}
@@ -92,7 +226,7 @@ export default function AnalyticsScreen() {
               icon="trophy-outline"
               label="WIN RATE"
               value={`${winRate}%`}
-              sub={`${ME.gamesWon}W · ${ME.gamesLost}L · ${ME.gamesDrawn}D`}
+              sub={`${leagueStats.gamesWon}W · ${leagueStats.gamesLost}L · ${leagueStats.gamesDrawn}D`}
               color={Colors.accent}
             />
             <StatCard
@@ -203,13 +337,13 @@ export default function AnalyticsScreen() {
           <Text style={styles.sectionDesc}>
             Players you've gone head-to-head against the most.
           </Text>
-          {RIVALS.length === 0 ? (
+          {leagueRivals.length === 0 ? (
             <View style={styles.emptyCard}>
               <Ionicons name="people-outline" size={32} color={Colors.muted} />
               <Text style={styles.emptyText}>Play more games to discover your rivals!</Text>
             </View>
           ) : (
-            RIVALS.map((rival, i) => {
+            leagueRivals.map((rival, i) => {
               const rp = rival.rivalPlayer;
               const initials = rp.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
               return (
@@ -279,8 +413,8 @@ export default function AnalyticsScreen() {
           )}
         </View>
 
-        {RIVALS.length > 0 && (() => {
-          const toughest = RIVALS.reduce((min, r) => r.winRate < min.winRate ? r : min, RIVALS[0]);
+        {leagueRivals.length > 0 && (() => {
+          const toughest = leagueRivals.reduce((min, r) => r.winRate < min.winRate ? r : min, leagueRivals[0]);
           const tp = toughest.rivalPlayer;
           const initials = tp.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
           return (
@@ -526,5 +660,35 @@ const styles = StyleSheet.create({
     padding: 13,
     borderWidth: 1,
     borderColor: `${Colors.red}22`,
+  },
+  leagueToggleRow: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    gap: 8,
+    marginBottom: 12,
+  },
+  leagueToggleBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.overlay,
+  },
+  leagueToggleBtnActive: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  leagueToggleText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    color: Colors.muted,
+  },
+  leagueToggleTextActive: {
+    color: Colors.base,
+    fontFamily: "Inter_600SemiBold",
   },
 });

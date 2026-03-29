@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import BallrLogo from "@/components/BallrLogo";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -13,7 +13,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
-import { Crew } from "@/constants/mock";
+import {
+  Crew,
+  League,
+  LEAGUES,
+  getPlayerLeagues,
+  isLeagueMember,
+} from "@/constants/mock";
 import { fetchCrews } from "@/lib/ballrApi";
 import { useBallrData } from "@/context/BallrDataContext";
 const CREW_COLORS = [Colors.primary, Colors.blue, Colors.teal, Colors.purple, Colors.amber];
@@ -69,6 +75,73 @@ function CrewCard({ crew, index }: { crew: Crew; index: number }) {
   );
 }
 
+function LeagueCard({ league, isMember, index }: { league: League; isMember: boolean; index: number }) {
+  const leagueColors = [Colors.teal, Colors.purple, Colors.amber, Colors.blue, Colors.primary];
+  const accentColor = leagueColors[index % leagueColors.length];
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.crewCard, pressed && { opacity: 0.85 }]}
+      onPress={() =>
+        router.push({ pathname: "/league/[id]", params: { id: league.id } })
+      }
+    >
+      <View style={[styles.crewColorBar, { backgroundColor: accentColor }]} />
+      <View style={styles.crewCardBody}>
+        <View style={styles.crewCardTop}>
+          <View style={[styles.crewIcon, { backgroundColor: `${accentColor}30` }]}>
+            <Ionicons
+              name={league.type === "private" ? "shield" : "globe-outline"}
+              size={18}
+              color={accentColor}
+            />
+          </View>
+          <View style={styles.crewCardInfo}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text style={styles.crewName} numberOfLines={1}>
+                {league.name}
+              </Text>
+              {league.type === "private" && (
+                <View style={styles.privateBadge}>
+                  <Text style={styles.privateBadgeText}>PRIVATE</Text>
+                </View>
+              )}
+            </View>
+            {isMember && league.description ? (
+              <Text style={styles.crewDesc} numberOfLines={1}>
+                {league.description}
+              </Text>
+            ) : !isMember ? (
+              <Text style={styles.crewDesc}>Private League</Text>
+            ) : null}
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={Colors.muted} />
+        </View>
+        <View style={styles.crewStatsRow}>
+          <View style={styles.crewStat}>
+            <Ionicons name="people-outline" size={12} color={Colors.muted} />
+            <Text style={styles.crewStatText}>{league.memberIds.length} members</Text>
+          </View>
+          <View style={styles.crewStatDot} />
+          <View style={styles.crewStat}>
+            <Ionicons name="location-outline" size={12} color={Colors.muted} />
+            <Text style={styles.crewStatText}>{league.city}</Text>
+          </View>
+          <View style={styles.crewStatDot} />
+          <View style={styles.crewStat}>
+            <Ionicons
+              name={league.type === "private" ? "lock-closed-outline" : "lock-open-outline"}
+              size={12}
+              color={Colors.muted}
+            />
+            <Text style={styles.crewStatText}>{league.type === "private" ? "Invite Only" : "Open"}</Text>
+          </View>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 function EmptyState() {
   return (
     <View style={styles.emptyState}>
@@ -108,6 +181,10 @@ export default function CrewsScreen() {
   const [crews, setCrews] = useState<Crew[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+
+  const playerId = currentPlayer?.id ?? "p0";
+  const myLeagues = useMemo(() => getPlayerLeagues(playerId), [playerId]);
+  const allLeagues = LEAGUES;
 
   useEffect(() => {
     loadCrews();
@@ -150,7 +227,29 @@ export default function CrewsScreen() {
               </Pressable>
             </View>
 
+            {/* Leagues Section */}
             <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>MY LEAGUES</Text>
+            </View>
+
+            {allLeagues.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="shield-outline" size={32} color={Colors.muted} />
+                <Text style={styles.emptySub}>No leagues available yet.</Text>
+              </View>
+            ) : (
+              allLeagues.map((league, i) => (
+                <LeagueCard
+                  key={league.id}
+                  league={league}
+                  isMember={isLeagueMember(league.id, playerId)}
+                  index={i}
+                />
+              ))
+            )}
+
+            {/* Crews Section */}
+            <View style={[styles.sectionHeader, { marginTop: 20 }]}>
               <Text style={styles.sectionTitle}>MY CREWS</Text>
               <Pressable
                 style={styles.joinCodeBtn}
@@ -400,5 +499,17 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+  },
+  privateBadge: {
+    backgroundColor: `${Colors.purple}33`,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  privateBadgeText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 8,
+    color: Colors.purple,
+    letterSpacing: 0.8,
   },
 });

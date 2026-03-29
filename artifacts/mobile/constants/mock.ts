@@ -161,6 +161,32 @@ export interface Game {
   aiAssignment?: AiTeamAssignment;
   carpoolOffers?: CarpoolOffer[];
   cutoffHours?: number;
+  leagueId?: string;
+}
+
+export interface League {
+  id: string;
+  name: string;
+  type: "public" | "private";
+  city: string;
+  memberIds: string[];
+  description: string;
+  createdAt: string;
+  maxMembers: number;
+}
+
+export interface LeagueStanding {
+  playerId: string;
+  playerName: string;
+  profileImageUrl?: string;
+  played: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  points: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
 }
 
 export interface PotmEntry {
@@ -1568,3 +1594,253 @@ export const CARPOOL_MESSAGES: Record<string, CarpoolMessage[]> = {
     },
   ],
 };
+
+// ── Leagues ─────────────────────────────────────────────────────
+
+const SUKHUMVIT_FC_MEMBER_IDS = [
+  "p0", "p1", "p2", "p3", "p4", "p5", "p7", "p8",
+  "pl1", "pl2", "pl3", "pl4", "pl5", "pl6", "pl7",
+];
+
+const BANGKOK_PLAYER_IDS = PLAYERS.filter((p) => p.basedIn === "Bangkok").map((p) => p.id);
+
+export const LEAGUES: League[] = [
+  {
+    id: "league-public-bkk",
+    name: "BallR Public League Bangkok",
+    type: "public",
+    city: "Bangkok",
+    memberIds: BANGKOK_PLAYER_IDS,
+    description: "Open league for all Bangkok ballers. Every game counts!",
+    createdAt: "2025-10-01T00:00:00Z",
+    maxMembers: 500,
+  },
+  {
+    id: "league-sukhumvit-fc",
+    name: "Sukhumvit FC",
+    type: "private",
+    city: "Bangkok",
+    memberIds: SUKHUMVIT_FC_MEMBER_IDS,
+    description: "Private league for the Sukhumvit area crew. Invite only.",
+    createdAt: "2025-11-15T00:00:00Z",
+    maxMembers: 20,
+  },
+];
+
+// Extra fake players for the private league (not in main PLAYERS array)
+const LEAGUE_EXTRA_PLAYERS: Record<string, { name: string; profileImageUrl: string }> = {
+  pl1: { name: "Diego Alvarez", profileImageUrl: "https://i.pravatar.cc/200?u=diego" },
+  pl2: { name: "Yuki Tanabe", profileImageUrl: "https://i.pravatar.cc/200?u=yuki_t" },
+  pl3: { name: "Ollie Barnes", profileImageUrl: "https://i.pravatar.cc/200?u=ollie" },
+  pl4: { name: "Ning S.", profileImageUrl: "https://i.pravatar.cc/200?u=ning" },
+  pl5: { name: "Farid Hassan", profileImageUrl: "https://i.pravatar.cc/200?u=farid" },
+  pl6: { name: "Luca Rossi", profileImageUrl: "https://i.pravatar.cc/200?u=luca" },
+  pl7: { name: "Jin Park", profileImageUrl: "https://i.pravatar.cc/200?u=jin" },
+};
+
+function getLeaguePlayerName(id: string): string {
+  const found = PLAYERS.find((p) => p.id === id);
+  if (found) return found.name;
+  return LEAGUE_EXTRA_PLAYERS[id]?.name ?? "Unknown";
+}
+
+function getLeaguePlayerImage(id: string): string | undefined {
+  const found = PLAYERS.find((p) => p.id === id);
+  if (found) return found.profileImageUrl;
+  return LEAGUE_EXTRA_PLAYERS[id]?.profileImageUrl;
+}
+
+// Generate ~15 completed league games for Sukhumvit FC over the last 2 months
+function generateLeagueGames(): Game[] {
+  const members = SUKHUMVIT_FC_MEMBER_IDS;
+  const leagueVenues = [VENUES[0], VENUES[1], VENUES[2], VENUES[3]]; // Bangkok venues
+  const games: Game[] = [];
+
+  const matchups: Array<{
+    dayOffset: number;
+    hour: number;
+    venueIdx: number;
+    blueIds: string[];
+    redIds: string[];
+    winner: "blue" | "red" | "draw";
+  }> = [
+    { dayOffset: 4, hour: 19, venueIdx: 0, blueIds: ["p0", "p1", "p3", "p5", "pl1"], redIds: ["p2", "p4", "p7", "p8", "pl2"], winner: "blue" },
+    { dayOffset: 7, hour: 18, venueIdx: 2, blueIds: ["p0", "p2", "p5", "pl3", "pl5"], redIds: ["p1", "p3", "p4", "pl1", "pl6"], winner: "red" },
+    { dayOffset: 11, hour: 20, venueIdx: 1, blueIds: ["p1", "p4", "p8", "pl2", "pl4"], redIds: ["p0", "p3", "p7", "pl5", "pl7"], winner: "blue" },
+    { dayOffset: 14, hour: 19, venueIdx: 3, blueIds: ["p0", "p1", "p5", "pl6", "pl7"], redIds: ["p2", "p7", "p8", "pl1", "pl3"], winner: "draw" },
+    { dayOffset: 18, hour: 18, venueIdx: 0, blueIds: ["p0", "p2", "p4", "p7", "pl4"], redIds: ["p1", "p3", "p5", "pl2", "pl5"], winner: "blue" },
+    { dayOffset: 21, hour: 19, venueIdx: 2, blueIds: ["p1", "p3", "p8", "pl1", "pl6"], redIds: ["p0", "p4", "p5", "pl3", "pl7"], winner: "red" },
+    { dayOffset: 25, hour: 20, venueIdx: 1, blueIds: ["p0", "p1", "p2", "pl2", "pl5"], redIds: ["p3", "p5", "p7", "pl4", "pl6"], winner: "blue" },
+    { dayOffset: 28, hour: 19, venueIdx: 3, blueIds: ["p0", "p5", "p8", "pl1", "pl3"], redIds: ["p1", "p2", "p4", "pl5", "pl7"], winner: "red" },
+    { dayOffset: 32, hour: 18, venueIdx: 0, blueIds: ["p1", "p4", "p7", "pl2", "pl6"], redIds: ["p0", "p2", "p3", "pl4", "pl1"], winner: "blue" },
+    { dayOffset: 35, hour: 20, venueIdx: 2, blueIds: ["p0", "p3", "p5", "pl3", "pl7"], redIds: ["p1", "p8", "p7", "pl5", "pl6"], winner: "draw" },
+    { dayOffset: 39, hour: 19, venueIdx: 1, blueIds: ["p0", "p1", "p4", "pl1", "pl4"], redIds: ["p2", "p3", "p5", "pl2", "pl7"], winner: "blue" },
+    { dayOffset: 42, hour: 18, venueIdx: 3, blueIds: ["p2", "p5", "p8", "pl3", "pl5"], redIds: ["p0", "p1", "p7", "pl6", "pl1"], winner: "red" },
+    { dayOffset: 46, hour: 20, venueIdx: 0, blueIds: ["p0", "p3", "p4", "pl2", "pl4"], redIds: ["p1", "p5", "p8", "pl5", "pl7"], winner: "blue" },
+    { dayOffset: 49, hour: 19, venueIdx: 2, blueIds: ["p1", "p2", "p7", "pl1", "pl6"], redIds: ["p0", "p4", "p5", "pl3", "pl4"], winner: "draw" },
+    { dayOffset: 53, hour: 18, venueIdx: 1, blueIds: ["p0", "p1", "p3", "pl5", "pl7"], redIds: ["p2", "p4", "p8", "pl2", "pl6"], winner: "blue" },
+  ];
+
+  matchups.forEach((m, i) => {
+    const venue = leagueVenues[m.venueIdx];
+    const gameTimeStr = daysAgo(m.dayOffset, m.hour);
+    const allPlayerIds = [...m.blueIds, ...m.redIds];
+    const bookings: Booking[] = allPlayerIds.map((pid, j) => ({
+      id: `blg${i}_${j}`,
+      gameId: `lg${i + 1}`,
+      player: PLAYERS.find((p) => p.id === pid) ?? {
+        id: pid,
+        name: getLeaguePlayerName(pid),
+        nationality: "Unknown",
+        eloRating: 1100,
+        eloCalibrated: true,
+        gamesPlayed: 10,
+        gamesWon: 4,
+        gamesLost: 4,
+        gamesDrawn: 2,
+        reliabilityScore: 90,
+        noShowCount: 0,
+        avgSkillRating: 3.5,
+        avgSportsmanshipRating: 4.0,
+        preferredPositions: ["MID"],
+        bio: "",
+        basedIn: "Bangkok",
+        memberSince: "Jan 2026",
+        profileImageUrl: getLeaguePlayerImage(pid),
+      },
+      teamAssignment: m.blueIds.includes(pid) ? "blue" : "red",
+      paymentStatus: "paid",
+      attended: true,
+    }));
+
+    games.push({
+      id: `lg${i + 1}`,
+      venue,
+      cityId: "bangkok",
+      gameTime: gameTimeStr,
+      durationMinutes: 90,
+      maxPlayers: 10,
+      currentPlayers: 10,
+      pricePerPlayer: 250,
+      skillLevel: "intermediate",
+      status: "completed",
+      winningTeam: m.winner,
+      organizer: PLAYERS.find((p) => p.id === m.blueIds[0]) ?? PLAYERS[0],
+      teamsBalanced: true,
+      minElo: 1000,
+      maxElo: 1500,
+      avgElo: 1250,
+      registrationCutoff: gameTimeStr,
+      bookings,
+      leagueId: "league-sukhumvit-fc",
+    });
+  });
+
+  return games;
+}
+
+export const LEAGUE_GAMES: Game[] = generateLeagueGames();
+
+// Add league games to ALL_GAMES (re-export combined)
+export const ALL_GAMES_WITH_LEAGUES: Game[] = [...ALL_GAMES, ...LEAGUE_GAMES];
+
+// ── League Standings ────────────────────────────────────────────
+
+export function getLeagueStandings(leagueId: string): LeagueStanding[] {
+  const league = LEAGUES.find((l) => l.id === leagueId);
+  if (!league) return [];
+
+  const leagueGames = LEAGUE_GAMES.filter(
+    (g) => g.leagueId === leagueId && g.status === "completed"
+  );
+
+  const standingsMap = new Map<string, LeagueStanding>();
+
+  // Initialize all league members
+  league.memberIds.forEach((pid) => {
+    standingsMap.set(pid, {
+      playerId: pid,
+      playerName: getLeaguePlayerName(pid),
+      profileImageUrl: getLeaguePlayerImage(pid),
+      played: 0,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      points: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+      goalDifference: 0,
+    });
+  });
+
+  leagueGames.forEach((game) => {
+    const blueIds = game.bookings
+      .filter((b) => b.teamAssignment === "blue")
+      .map((b) => b.player.id);
+    const redIds = game.bookings
+      .filter((b) => b.teamAssignment === "red")
+      .map((b) => b.player.id);
+
+    // Simulate realistic scores based on winning team
+    let blueGoals: number;
+    let redGoals: number;
+    if (game.winningTeam === "blue") {
+      blueGoals = 2 + Math.floor(Math.abs(Math.sin(game.id.charCodeAt(2) * 7)) * 3);
+      redGoals = Math.floor(Math.abs(Math.cos(game.id.charCodeAt(2) * 5)) * 2);
+    } else if (game.winningTeam === "red") {
+      redGoals = 2 + Math.floor(Math.abs(Math.sin(game.id.charCodeAt(2) * 3)) * 3);
+      blueGoals = Math.floor(Math.abs(Math.cos(game.id.charCodeAt(2) * 9)) * 2);
+    } else {
+      blueGoals = 1 + Math.floor(Math.abs(Math.sin(game.id.charCodeAt(2) * 11)) * 2);
+      redGoals = blueGoals;
+    }
+
+    const updatePlayer = (pid: string, team: "blue" | "red") => {
+      const entry = standingsMap.get(pid);
+      if (!entry) return;
+      entry.played += 1;
+      const isWinner =
+        (game.winningTeam === "blue" && team === "blue") ||
+        (game.winningTeam === "red" && team === "red");
+      const isLoser =
+        (game.winningTeam === "blue" && team === "red") ||
+        (game.winningTeam === "red" && team === "blue");
+      if (game.winningTeam === "draw") {
+        entry.draws += 1;
+        entry.points += 1;
+      } else if (isWinner) {
+        entry.wins += 1;
+        entry.points += 3;
+      } else if (isLoser) {
+        entry.losses += 1;
+      }
+      entry.goalsFor += team === "blue" ? blueGoals : redGoals;
+      entry.goalsAgainst += team === "blue" ? redGoals : blueGoals;
+      entry.goalDifference = entry.goalsFor - entry.goalsAgainst;
+    };
+
+    blueIds.forEach((pid) => updatePlayer(pid, "blue"));
+    redIds.forEach((pid) => updatePlayer(pid, "red"));
+  });
+
+  return Array.from(standingsMap.values())
+    .filter((s) => s.played > 0)
+    .sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+      return b.goalsFor - a.goalsFor;
+    });
+}
+
+export function isLeagueMember(leagueId: string, playerId: string): boolean {
+  const league = LEAGUES.find((l) => l.id === leagueId);
+  return league ? league.memberIds.includes(playerId) : false;
+}
+
+export function getPlayerLeagues(playerId: string): League[] {
+  return LEAGUES.filter((l) => l.memberIds.includes(playerId));
+}
+
+export function getLeagueGames(leagueId: string): Game[] {
+  return LEAGUE_GAMES.filter((g) => g.leagueId === leagueId);
+}
