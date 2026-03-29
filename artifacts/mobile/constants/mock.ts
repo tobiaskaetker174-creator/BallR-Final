@@ -359,8 +359,8 @@ const VENUES: Venue[] = [
     lat: 13.731,
     lng: 100.541,
     capacity: 12,
-    communityLink: "https://t.me/lumpini_football_bkk",
-    communityType: "telegram",
+    communityLink: "https://chat.whatsapp.com/lumpini-football-bkk",
+    communityType: "whatsapp",
     imageUrl: "https://images.pexels.com/photos/3621104/pexels-photo-3621104.jpeg?auto=compress&cs=tinysrgb&w=800",
   },
   {
@@ -387,8 +387,8 @@ const VENUES: Venue[] = [
     lat: 13.716,
     lng: 100.585,
     capacity: 10,
-    communityLink: "https://t.me/flick_football_ekkamai",
-    communityType: "telegram",
+    communityLink: "https://chat.whatsapp.com/flick-football-ekkamai",
+    communityType: "whatsapp",
     imageUrl: "https://images.pexels.com/photos/2291006/pexels-photo-2291006.jpeg?auto=compress&cs=tinysrgb&w=800",
   },
   {

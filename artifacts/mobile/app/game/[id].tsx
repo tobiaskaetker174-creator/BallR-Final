@@ -796,8 +796,12 @@ export default function GameDetailScreen() {
                               const footEmoji = foot === "left" ? "L" : foot === "both" ? "★" : "R";
                               return (
                                 <View key={ni} style={styles.pitchPlayerDot}>
-                                  <View style={[styles.pitchDotCircle, { backgroundColor: Colors.blue }]}>
-                                    <Text style={styles.pitchDotText}>{name.split(" ")[0].slice(0, 3)}</Text>
+                                  <View style={[styles.pitchDotCircle, { borderColor: Colors.accent, borderWidth: 2 }]}>
+                                    {p?.profileImageUrl ? (
+                                      <Image source={{ uri: p.profileImageUrl }} style={styles.pitchDotImage} />
+                                    ) : (
+                                      <Text style={styles.pitchDotText}>{name.split(" ")[0].slice(0, 3)}</Text>
+                                    )}
                                   </View>
                                   <Text style={styles.pitchPosLabel}>{pos}</Text>
                                   {foot && (
@@ -835,8 +839,12 @@ export default function GameDetailScreen() {
                               const footEmoji = foot === "left" ? "L" : foot === "both" ? "★" : "R";
                               return (
                                 <View key={ni} style={styles.pitchPlayerDot}>
-                                  <View style={[styles.pitchDotCircle, { backgroundColor: Colors.red }]}>
-                                    <Text style={styles.pitchDotText}>{name.split(" ")[0].slice(0, 3)}</Text>
+                                  <View style={[styles.pitchDotCircle, { borderColor: Colors.red, borderWidth: 2 }]}>
+                                    {p?.profileImageUrl ? (
+                                      <Image source={{ uri: p.profileImageUrl }} style={styles.pitchDotImage} />
+                                    ) : (
+                                      <Text style={styles.pitchDotText}>{name.split(" ")[0].slice(0, 3)}</Text>
+                                    )}
                                   </View>
                                   <Text style={styles.pitchPosLabel}>{pos}</Text>
                                   {foot && (
@@ -854,8 +862,8 @@ export default function GameDetailScreen() {
                   </View>
                 </View>
                 <View style={styles.pitchTeamLabels}>
-                  <Text style={[styles.pitchTeamLabel, { color: Colors.blue }]}>🔵 Blue</Text>
-                  <Text style={[styles.pitchTeamLabel, { color: Colors.red }]}>Red 🔴</Text>
+                  <Text style={[styles.pitchTeamLabel, { color: Colors.accent }]}>● Blue</Text>
+                  <Text style={[styles.pitchTeamLabel, { color: Colors.red }]}>Red ●</Text>
                 </View>
               </View>
 
@@ -1551,14 +1559,14 @@ const styles = StyleSheet.create({
   aiBalancePillText: { fontFamily: "Inter_700Bold", fontSize: 11, color: Colors.accent },
   pitchContainer: { marginBottom: 12 },
   pitchField: {
-    backgroundColor: "#1a4a1a",
+    backgroundColor: Colors.primary,
     borderRadius: 10,
     height: 150,
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#2d6a2d",
+    borderColor: `${Colors.accent}33`,
     position: "relative",
   },
   pitchCenterLine: {
@@ -1599,11 +1607,18 @@ const styles = StyleSheet.create({
   },
   pitchPlayerDot: { alignItems: "center", gap: 2 },
   pitchDotCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: Colors.surface,
+    overflow: "hidden",
+  },
+  pitchDotImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   pitchDotText: { fontFamily: "Inter_700Bold", fontSize: 6, color: Colors.text },
   pitchPosLabel: { fontFamily: "Inter_700Bold", fontSize: 7, color: "rgba(255,255,255,0.6)" },
