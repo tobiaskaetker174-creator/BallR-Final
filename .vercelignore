@@ -1,0 +1,11 @@
+node_modules
+.git
+.local
+.cache
+.expo
+artifacts/api-server
+artifacts/mockup-sandbox
+scripts
+dist
+*.zip
+*.tgz
