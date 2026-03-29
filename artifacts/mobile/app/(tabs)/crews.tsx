@@ -22,6 +22,7 @@ import {
 } from "@/constants/mock";
 import { fetchCrews } from "@/lib/ballrApi";
 import { useBallrData } from "@/context/BallrDataContext";
+import { useAuth } from "@/context/AuthContext";
 const CREW_COLORS = [Colors.primary, Colors.blue, Colors.teal, Colors.purple, Colors.amber];
 
 function CrewCard({ crew, index }: { crew: Crew; index: number }) {
@@ -111,8 +112,12 @@ function LeagueCard({ league, isMember, index }: { league: League; isMember: boo
               <Text style={styles.crewDesc} numberOfLines={1}>
                 {league.description}
               </Text>
-            ) : !isMember ? (
+            ) : !isMember && league.type === "private" ? (
               <Text style={styles.crewDesc}>Private League</Text>
+            ) : !isMember && league.description ? (
+              <Text style={styles.crewDesc} numberOfLines={1}>
+                {league.description}
+              </Text>
             ) : null}
           </View>
           <Ionicons name="chevron-forward" size={16} color={Colors.muted} />
@@ -177,12 +182,13 @@ export default function CrewsScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
   const { currentPlayer } = useBallrData();
+  const { user } = useAuth();
 
   const [crews, setCrews] = useState<Crew[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  const playerId = currentPlayer?.id ?? "p0";
+  const playerId = user?.id ?? currentPlayer?.id ?? "p0";
   const myLeagues = useMemo(() => getPlayerLeagues(playerId), [playerId]);
   const allLeagues = LEAGUES;
 
@@ -227,26 +233,47 @@ export default function CrewsScreen() {
               </Pressable>
             </View>
 
-            {/* Leagues Section */}
+            {/* My Leagues — leagues the user is a member of */}
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>MY LEAGUES</Text>
             </View>
 
-            {allLeagues.length === 0 ? (
+            {myLeagues.length === 0 ? (
               <View style={styles.emptyState}>
                 <Ionicons name="shield-outline" size={32} color={Colors.muted} />
-                <Text style={styles.emptySub}>No leagues available yet.</Text>
+                <Text style={styles.emptySub}>You're not in any leagues yet.</Text>
               </View>
             ) : (
-              allLeagues.map((league, i) => (
+              myLeagues.map((league, i) => (
                 <LeagueCard
                   key={league.id}
                   league={league}
-                  isMember={isLeagueMember(league.id, playerId)}
+                  isMember={true}
                   index={i}
                 />
               ))
             )}
+
+            {/* Other Private Leagues — leagues the user is NOT a member of */}
+            {(() => {
+              const otherLeagues = allLeagues.filter((l) => !isLeagueMember(l.id, playerId));
+              if (otherLeagues.length === 0) return null;
+              return (
+                <>
+                  <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+                    <Text style={styles.sectionTitle}>OTHER PRIVATE LEAGUES</Text>
+                  </View>
+                  {otherLeagues.map((league, i) => (
+                    <LeagueCard
+                      key={league.id}
+                      league={league}
+                      isMember={false}
+                      index={i + myLeagues.length}
+                    />
+                  ))}
+                </>
+              );
+            })()}
 
             {/* Crews Section */}
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>

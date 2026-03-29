@@ -22,6 +22,7 @@ import {
   Game,
 } from "@/constants/mock";
 import { useBallrData } from "@/context/BallrDataContext";
+import { useAuth } from "@/context/AuthContext";
 
 function StandingsRow({
   standing,
@@ -141,8 +142,9 @@ export default function LeagueDetailScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
   const { currentPlayer } = useBallrData();
+  const { user } = useAuth();
 
-  const playerId = currentPlayer?.id ?? "p0";
+  const playerId = user?.id ?? currentPlayer?.id ?? "p0";
   const league = LEAGUES.find((l) => l.id === id);
   const isMember = league ? isLeagueMember(league.id, playerId) : false;
 
@@ -223,15 +225,40 @@ export default function LeagueDetailScreen() {
           ) : null}
         </View>
 
-        {/* Non-member view */}
-        {!isMember && league.type === "private" && (
+        {/* Non-member view — metadata + request to join */}
+        {!isMember && (
           <View style={styles.lockedSection}>
-            <Ionicons name="lock-closed-outline" size={36} color={Colors.muted} />
-            <Text style={styles.lockedTitle}>Private League</Text>
-            <Text style={styles.lockedDesc}>
-              You are not a member of this league. Members, standings, and stats
-              are only visible to league members.
-            </Text>
+            <View style={styles.metaGrid}>
+              <View style={styles.metaItem}>
+                <Ionicons name="people-outline" size={18} color={Colors.accent} />
+                <Text style={styles.metaValue}>{league.memberIds.length}</Text>
+                <Text style={styles.metaLabel}>Members</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Ionicons name="football-outline" size={18} color={Colors.accent} />
+                <Text style={styles.metaValue}>{getLeagueGames(league.id).length}</Text>
+                <Text style={styles.metaLabel}>Games</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Ionicons name="calendar-outline" size={18} color={Colors.accent} />
+                <Text style={styles.metaValue}>{new Date(league.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</Text>
+                <Text style={styles.metaLabel}>Founded</Text>
+              </View>
+            </View>
+            {league.type === "private" && (
+              <>
+                <View style={styles.lockedInfo}>
+                  <Ionicons name="lock-closed-outline" size={16} color={Colors.muted} />
+                  <Text style={styles.lockedDesc}>
+                    Members, standings, and stats are only visible to league members.
+                  </Text>
+                </View>
+                <Pressable style={styles.requestJoinBtn}>
+                  <Ionicons name="person-add-outline" size={16} color={Colors.base} />
+                  <Text style={styles.requestJoinText}>Request to Join</Text>
+                </Pressable>
+              </>
+            )}
           </View>
         )}
 
@@ -722,4 +749,11 @@ const styles = StyleSheet.create({
     color: Colors.accent,
     letterSpacing: 0.8,
   },
+  metaGrid: { flexDirection: "row", justifyContent: "space-around", width: "100%" as `${number}%`, marginBottom: 16 },
+  metaItem: { alignItems: "center" as const, gap: 4 },
+  metaValue: { fontFamily: "Inter_700Bold", fontSize: 16, color: Colors.text },
+  metaLabel: { fontFamily: "Inter_400Regular", fontSize: 10, color: Colors.muted },
+  lockedInfo: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8, paddingHorizontal: 16 },
+  requestJoinBtn: { backgroundColor: Colors.accent, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const, gap: 8, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 10, marginTop: 8 },
+  requestJoinText: { fontFamily: "Inter_700Bold", fontSize: 14, color: Colors.base },
 });

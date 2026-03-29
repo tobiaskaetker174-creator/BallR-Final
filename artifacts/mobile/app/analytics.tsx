@@ -61,6 +61,12 @@ export default function AnalyticsScreen() {
         gamesLost: ME.gamesLost,
         gamesDrawn: ME.gamesDrawn,
         winRate: ME.gamesPlayed > 0 ? Math.round((ME.gamesWon / ME.gamesPlayed) * 100) : 0,
+        reliability: ME.reliabilityScore,
+        sportsmanship: ME.avgSportsmanshipRating,
+        eloRating: ME.eloRating,
+        ballerScore: ME.ballerScore,
+        eloGain: ME.eloGainThisMonth,
+        winStreak: ME.winStreak,
       };
     }
     // League-specific stats
@@ -70,9 +76,11 @@ export default function AnalyticsScreen() {
     let wins = 0;
     let losses = 0;
     let draws = 0;
+    let gamesAttended = 0;
     leagueGames.forEach((game) => {
       const myBooking = game.bookings.find((b) => b.player.id === ME.id);
       if (!myBooking) return;
+      gamesAttended++;
       const myTeam = myBooking.teamAssignment;
       if (game.winningTeam === "draw") {
         draws++;
@@ -83,14 +91,36 @@ export default function AnalyticsScreen() {
       }
     });
     const played = wins + losses + draws;
+    // Calculate league-specific reliability (% of league games attended)
+    const totalLeagueGames = leagueGames.length;
+    const leagueReliability = totalLeagueGames > 0 ? Math.round((gamesAttended / totalLeagueGames) * 100) : 100;
+    // Simulate league-specific sportsmanship (slightly different from overall)
+    const leagueSportsmanship = played > 0 ? Math.min(5.0, Math.max(3.0, 4.2 + (wins - losses) * 0.05)) : ME.avgSportsmanshipRating;
+    // League-specific ELO gain (approximate)
+    const leagueEloGain = Math.round((wins - losses) * 15);
+    // League-specific win streak
+    let streak = 0;
+    const sortedGames = [...leagueGames].sort((a, b) => new Date(b.gameTime).getTime() - new Date(a.gameTime).getTime());
+    for (const g of sortedGames) {
+      const myB = g.bookings.find((b) => b.player.id === ME.id);
+      if (!myB) break;
+      if (g.winningTeam === myB.teamAssignment) streak++;
+      else break;
+    }
     return {
       gamesPlayed: played,
       gamesWon: wins,
       gamesLost: losses,
       gamesDrawn: draws,
       winRate: played > 0 ? Math.round((wins / played) * 100) : 0,
+      reliability: leagueReliability,
+      sportsmanship: Math.round(leagueSportsmanship * 10) / 10,
+      eloRating: ME.eloRating,
+      ballerScore: played > 0 ? Math.round(wins * 8 + draws * 3 + leagueEloGain * 0.5) : 0,
+      eloGain: leagueEloGain,
+      winStreak: streak,
     };
-  }, [selectedLeague, ME.id, ME.gamesPlayed, ME.gamesWon, ME.gamesLost, ME.gamesDrawn]);
+  }, [selectedLeague, ME]);
 
   // Compute league-specific rivals
   const leagueRivals = useMemo(() => {
@@ -232,51 +262,51 @@ export default function AnalyticsScreen() {
             <StatCard
               icon="flash-outline"
               label="ELO RATING"
-              value={`${ME.eloRating}`}
+              value={`${leagueStats.eloRating}`}
               sub={eloTier.label ? `${eloTier.tier} ${eloTier.label}` : undefined}
               color={eloTier.color}
             />
             <StatCard
               icon="checkmark-circle-outline"
               label="RELIABILITY"
-              value={`${ME.reliabilityScore}%`}
+              value={`${leagueStats.reliability}%`}
               sub="attendance rate"
-              color={getReliabilityColor(ME.reliabilityScore)}
+              color={getReliabilityColor(leagueStats.reliability)}
             />
             <StatCard
               icon="star-outline"
               label="SPIRIT RATING"
-              value={ME.avgSportsmanshipRating.toFixed(1)}
+              value={leagueStats.sportsmanship.toFixed(1)}
               sub="avg sportsmanship"
               color={Colors.amber}
             />
           </View>
         </View>
 
-        {ME.ballerScore !== undefined && (
+        {leagueStats.ballerScore !== undefined && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>BALLR OF THE MONTH SCORE</Text>
             <View style={styles.botmCard}>
               <View style={styles.botmLeft}>
-                <Text style={styles.botmValue}>{ME.ballerScore}</Text>
+                <Text style={styles.botmValue}>{leagueStats.ballerScore}</Text>
                 <Text style={styles.botmLabel}>pts</Text>
               </View>
               <View style={styles.botmRight}>
-                {ME.eloGainThisMonth !== undefined && (
+                {leagueStats.eloGain !== undefined && (
                   <View style={styles.botmStat}>
                     <Text style={styles.botmStatLabel}>ELO gain this month</Text>
                     <Text style={[styles.botmStatValue, {
-                      color: ME.eloGainThisMonth >= 0 ? Colors.accent : Colors.red
+                      color: leagueStats.eloGain >= 0 ? Colors.accent : Colors.red
                     }]}>
-                      {ME.eloGainThisMonth >= 0 ? "+" : ""}{ME.eloGainThisMonth}
+                      {leagueStats.eloGain >= 0 ? "+" : ""}{leagueStats.eloGain}
                     </Text>
                   </View>
                 )}
-                {ME.winStreak !== undefined && ME.winStreak > 0 && (
+                {leagueStats.winStreak !== undefined && leagueStats.winStreak > 0 && (
                   <View style={styles.botmStat}>
                     <Text style={styles.botmStatLabel}>Win streak</Text>
                     <Text style={[styles.botmStatValue, { color: Colors.amber }]}>
-                      🔥 {ME.winStreak} games
+                      🔥 {leagueStats.winStreak} games
                     </Text>
                   </View>
                 )}
