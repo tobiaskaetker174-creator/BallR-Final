@@ -302,6 +302,7 @@ export default function GameDetailScreen() {
             return (
               <View style={styles.eloRangeTrackContainer}>
                 <View style={styles.eloRangeTrack}>
+                  <View style={[styles.eloRangeFill, { width: `${myMarkerPct}%` as `${number}%` }]} />
                   <View style={[styles.eloRangeAvgLine, { left: `${avgMarkerPct}%` as `${number}%` }]} />
                   <View style={[styles.eloRangeMarkerLine, { left: `${myMarkerPct}%` as `${number}%` }]}>
                     <View style={styles.eloRangeMarkerDot} />
@@ -999,6 +1000,14 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     position: "relative",
     overflow: "visible",
+  },
+  eloRangeFill: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: Colors.primary,
   },
   eloRangeAvgLine: {
     position: "absolute",
