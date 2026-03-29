@@ -491,7 +491,7 @@ export default function DiscoverScreen() {
                 style={styles.featuredCard}
                 onPress={() => router.push({ pathname: "/game/[id]", params: { id: featuredGame.id } })}
               >
-                <WebImage uri={featuredGame.venue.imageUrl ?? VENUES_LIST.find(v => v.id === featuredGame.venue.id)?.imageUrl ?? "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=800"} style={styles.featuredImage} />
+                <WebImage uri={featuredGame.venue.imageUrl ?? VENUES_LIST.find(v => v.id === featuredGame.venue.id)?.imageUrl ?? "https://images.unsplash.com/photo-1556056504-5c7696c4c28d?w=800"} style={styles.featuredImage} />
                 <LinearGradient
                   colors={["transparent", "rgba(20,19,18,0.95)"]}
                   style={styles.featuredGradient}
