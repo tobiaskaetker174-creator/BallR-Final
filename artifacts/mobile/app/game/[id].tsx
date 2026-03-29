@@ -289,7 +289,7 @@ export default function GameDetailScreen() {
           </View>
           {(() => {
             // Always use current user's ELO from auth context or fresh PLAYERS[0]
-            const myElo = user?.eloRating ?? 1350;
+            const myElo = user?.eloRating ?? PLAYERS[0].eloRating;
             // Expand range to include user's ELO if outside game range
             const rangeMin = Math.min(computedMinElo, myElo);
             const rangeMax = Math.max(computedMaxElo, myElo);
