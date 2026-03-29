@@ -490,11 +490,15 @@ export default function DiscoverScreen() {
                 style={styles.featuredCard}
                 onPress={() => router.push({ pathname: "/game/[id]", params: { id: featuredGame.id } })}
               >
-                <Image
-                  source={{ uri: featuredGame.venue.imageUrl }}
-                  style={styles.featuredImage}
-                  resizeMode="cover"
-                />
+                {Platform.OS === "web" ? (
+                  <View style={[styles.featuredImage, { backgroundImage: `url(${featuredGame.venue.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" } as any]} />
+                ) : (
+                  <Image
+                    source={{ uri: featuredGame.venue.imageUrl }}
+                    style={styles.featuredImage}
+                    resizeMode="cover"
+                  />
+                )}
                 <LinearGradient
                   colors={["transparent", "rgba(20,19,18,0.95)"]}
                   style={styles.featuredGradient}
