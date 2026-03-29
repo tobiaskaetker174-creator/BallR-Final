@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import {
+  ALL_GAMES,
   LEAGUES,
   PLAYERS,
   getLeagueStandings,
@@ -148,9 +149,11 @@ export default function LeagueDetailScreen() {
   const league = LEAGUES.find((l) => l.id === id);
   const isMember = league ? isLeagueMember(league.id, playerId) : false;
 
+  const isPublic = league?.type === "public";
+
   const standings = useMemo(
-    () => (league && isMember ? getLeagueStandings(league.id) : []),
-    [league, isMember]
+    () => (league && isMember && !isPublic ? getLeagueStandings(league.id) : []),
+    [league, isMember, isPublic]
   );
 
   const recentGames = useMemo(
@@ -165,6 +168,21 @@ export default function LeagueDetailScreen() {
         : [],
     [league]
   );
+
+  // For public leagues, show recent public games from ALL_GAMES
+  const recentPublicGames = useMemo(() => {
+    if (!league || league.type !== "public") return [];
+    return ALL_GAMES.filter(
+      (g) =>
+        g.status === "completed" &&
+        g.cityId === "bangkok"
+    )
+      .sort(
+        (a, b) =>
+          new Date(b.gameTime).getTime() - new Date(a.gameTime).getTime()
+      )
+      .slice(0, 5);
+  }, [league]);
 
   if (!league) {
     return (
@@ -220,7 +238,7 @@ export default function LeagueDetailScreen() {
               {league.memberIds.length}/{league.maxMembers} members
             </Text>
           </View>
-          {isMember && league.description ? (
+          {league.description ? (
             <Text style={styles.leagueDescription}>{league.description}</Text>
           ) : null}
         </View>
@@ -378,76 +396,133 @@ export default function LeagueDetailScreen() {
           </View>
         )}
 
-        {/* Public league — show all members */}
-        {league.type === "public" && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              MEMBERS ({league.memberIds.length})
-            </Text>
-            <View style={styles.membersCard}>
-              {league.memberIds.slice(0, 20).map((mid) => {
-                const player = PLAYERS.find((p) => p.id === mid);
-                const name = player?.name ?? mid;
-                const initials = name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .slice(0, 2)
-                  .join("")
-                  .toUpperCase();
-                const avatarColors = [
-                  Colors.primary,
-                  Colors.blue,
-                  Colors.teal,
-                  Colors.purple,
-                  Colors.amber,
-                ];
-                const colorIdx = mid.charCodeAt(mid.length - 1) % avatarColors.length;
-                return (
-                  <Pressable
-                    key={mid}
-                    style={styles.memberRow}
-                    onPress={() => {
-                      if (player) {
-                        router.push({
-                          pathname: "/player/[id]",
-                          params: { id: mid },
-                        });
-                      }
-                    }}
-                  >
-                    <View
-                      style={[
-                        styles.memberAvatar,
-                        { backgroundColor: `${avatarColors[colorIdx]}44` },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.memberAvatarText,
-                          { color: avatarColors[colorIdx] },
-                        ]}
-                      >
-                        {initials}
-                      </Text>
-                    </View>
-                    <Text style={styles.memberName}>{name}</Text>
-                    {mid === playerId && (
-                      <View style={styles.youBadge}>
-                        <Text style={styles.youBadgeText}>YOU</Text>
-                      </View>
-                    )}
-                    {player && (
-                      <Ionicons
-                        name="chevron-forward"
-                        size={14}
-                        color={Colors.muted}
-                      />
-                    )}
-                  </Pressable>
-                );
-              })}
+        {/* Public league — metadata + contact + recent public games */}
+        {isPublic && (
+          <>
+            <View style={styles.section}>
+              <View style={styles.metaGrid}>
+                <View style={styles.metaItem}>
+                  <Ionicons name="people-outline" size={18} color={Colors.accent} />
+                  <Text style={styles.metaValue}>{league.memberIds.length}</Text>
+                  <Text style={styles.metaLabel}>Members</Text>
+                </View>
+                <View style={styles.metaItem}>
+                  <Ionicons name="globe-outline" size={18} color={Colors.accent} />
+                  <Text style={styles.metaValue}>{league.city}</Text>
+                  <Text style={styles.metaLabel}>City</Text>
+                </View>
+                <View style={styles.metaItem}>
+                  <Ionicons name="calendar-outline" size={18} color={Colors.accent} />
+                  <Text style={styles.metaValue}>
+                    {new Date(league.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </Text>
+                  <Text style={styles.metaLabel}>Founded</Text>
+                </View>
+              </View>
             </View>
-          </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>CONTACT</Text>
+              <View style={styles.contactCard}>
+                <Ionicons name="mail-outline" size={18} color={Colors.accent} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.contactLabel}>Organizer Contact</Text>
+                  <Text style={styles.contactValue}>ballr.bangkok@gmail.com</Text>
+                </View>
+              </View>
+            </View>
+
+            {recentPublicGames.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>VIEW GAMES</Text>
+                <View style={styles.recentGamesCard}>
+                  {recentPublicGames.map((game, i) => (
+                    <View key={game.id}>
+                      <Pressable
+                        style={styles.recentGameRow}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/game/[id]",
+                            params: { id: game.id },
+                          })
+                        }
+                      >
+                        <View style={styles.recentGameLeft}>
+                          <Text style={styles.recentGameVenue} numberOfLines={1}>
+                            {game.venue.name}
+                          </Text>
+                          <Text style={styles.recentGameTime}>
+                            {formatGameTime(game.gameTime)}
+                          </Text>
+                        </View>
+                        {game.winningTeam ? (
+                          <View
+                            style={[
+                              styles.recentGameBadge,
+                              {
+                                backgroundColor: `${
+                                  game.winningTeam === "blue"
+                                    ? Colors.blue
+                                    : game.winningTeam === "red"
+                                      ? Colors.red
+                                      : Colors.muted
+                                }22`,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.recentGameBadgeText,
+                                {
+                                  color:
+                                    game.winningTeam === "blue"
+                                      ? Colors.blue
+                                      : game.winningTeam === "red"
+                                        ? Colors.red
+                                        : Colors.muted,
+                                },
+                              ]}
+                            >
+                              {game.winningTeam === "blue"
+                                ? "Blue Win"
+                                : game.winningTeam === "red"
+                                  ? "Red Win"
+                                  : "Draw"}
+                            </Text>
+                          </View>
+                        ) : (
+                          <View
+                            style={[
+                              styles.recentGameBadge,
+                              { backgroundColor: `${Colors.accent}22` },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.recentGameBadgeText,
+                                { color: Colors.accent },
+                              ]}
+                            >
+                              Completed
+                            </Text>
+                          </View>
+                        )}
+                        <Text style={styles.recentGamePlayers}>
+                          {game.currentPlayers}v{game.currentPlayers}
+                        </Text>
+                      </Pressable>
+                      {i < recentPublicGames.length - 1 && (
+                        <View style={styles.recentGameDivider} />
+                      )}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
     </View>
@@ -756,4 +831,23 @@ const styles = StyleSheet.create({
   lockedInfo: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8, paddingHorizontal: 16 },
   requestJoinBtn: { backgroundColor: Colors.accent, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const, gap: 8, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 10, marginTop: 8 },
   requestJoinText: { fontFamily: "Inter_700Bold", fontSize: 14, color: Colors.base },
+  contactCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 12,
+  },
+  contactLabel: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    color: Colors.muted,
+  },
+  contactValue: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 14,
+    color: Colors.accent,
+    marginTop: 2,
+  },
 });
