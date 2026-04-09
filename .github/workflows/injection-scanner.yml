@@ -1,0 +1,151 @@
+# Prompt Injection Scanner — protects against AI agent injection attacks
+# This repo is edited by multiple AI agents. This workflow scans all pushes
+# and PRs for known prompt injection patterns.
+#
+# Required GitHub Secrets:
+#   TELEGRAM_BOT_TOKEN  — Telegram bot token from @BotFather
+#   TELEGRAM_CHAT_ID    — Your personal Telegram chat ID
+#
+name: Injection Scanner
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Scan for prompt injection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Get changed files
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} || true)
+          else
+            FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git ls-files)
+          fi
+
+          # Filter to scannable file types
+          SCAN_FILES=$(echo "$FILES" | grep -iE '\.(ts|tsx|js|jsx|md|json|html|css|yml|yaml|txt|env\.example|sh|py)$' || true)
+
+          if [ -z "$SCAN_FILES" ]; then
+            echo "no_files=true" >> $GITHUB_OUTPUT
+            echo "No scannable files changed."
+          else
+            echo "no_files=false" >> $GITHUB_OUTPUT
+            echo "$SCAN_FILES" > /tmp/scan-files.txt
+            echo "Files to scan:"
+            cat /tmp/scan-files.txt
+          fi
+
+      - name: Scan for injection patterns
+        if: steps.changed.outputs.no_files != 'true'
+        id: scan
+        run: |
+          PATTERNS=(
+            "ignore previous"
+            "ignore above"
+            "ignore all"
+            "disregard"
+            "forget your instructions"
+            "you are now"
+            "act as"
+            "pretend you"
+            "system prompt"
+            "new instructions"
+            "override"
+            "jailbreak"
+            "do not follow"
+            "bypass"
+            "from now on you"
+            "speaking as admin"
+            "IMPORTANT:"
+            "INSTRUCTION:"
+            "claude please"
+            "hey claude"
+            "hey assistant"
+            "ignore safety"
+            "ignore security"
+            "reveal your"
+            "show me your prompt"
+            "what are your instructions"
+            "repeat after me"
+            "translate this and follow"
+            "base64 decode"
+            "eval("
+            "execute this"
+          )
+
+          FOUND=0
+          REPORT=""
+
+          while IFS= read -r file; do
+            [ -f "$file" ] || continue
+
+            # Skip this workflow file itself and SECURITY.md
+            case "$file" in
+              .github/workflows/injection-scanner.yml|SECURITY.md|CLAUDE.md) continue ;;
+            esac
+
+            for pattern in "${PATTERNS[@]}"; do
+              MATCHES=$(grep -inH "$pattern" "$file" 2>/dev/null || true)
+              if [ -n "$MATCHES" ]; then
+                # Whitelist: skip if pattern is inside the scanner workflow or security docs
+                if echo "$MATCHES" | grep -q "PATTERNS\|injection.scanner\|# Required\|# This"; then
+                  continue
+                fi
+                FOUND=$((FOUND + 1))
+                REPORT="$REPORT\n⚠️ PATTERN: '$pattern'\n$MATCHES\n"
+              fi
+            done
+          done < /tmp/scan-files.txt
+
+          if [ $FOUND -gt 0 ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo -e "$REPORT" > /tmp/injection-report.txt
+            echo "::error::🚨 PROMPT INJECTION DETECTED — $FOUND pattern(s) found"
+            echo -e "$REPORT"
+            exit 1
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "✅ No injection patterns detected."
+          fi
+
+      - name: Notify Telegram on detection
+        if: failure() && steps.scan.outputs.found == 'true'
+        run: |
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.ref_name }}"
+          ACTOR="${{ github.actor }}"
+          SHA="${{ github.sha }}"
+          SHORT_SHA="${SHA:0:7}"
+          REPORT=$(cat /tmp/injection-report.txt | head -c 3000)
+
+          MESSAGE="🚨 *INJECTION ALERT*
+
+          📦 Repo: \`${REPO}\`
+          🌿 Branch: \`${BRANCH}\`
+          👤 Author: \`${ACTOR}\`
+          🔗 Commit: \`${SHORT_SHA}\`
+
+          ${REPORT}
+
+          ⚡ Action required: Review this commit immediately."
+
+          curl -s -X POST \
+            "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="$(echo -e "$MESSAGE")" \
+            -d parse_mode="Markdown" \
+            --max-time 10 || echo "Telegram notification failed"

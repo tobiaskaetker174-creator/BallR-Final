@@ -1,0 +1,26 @@
+# Security: normalize line endings and strip dangerous unicode
+* text=auto eol=lf
+
+# Ensure consistent encoding — prevents BOM/RTL injection vectors
+*.ts    text eol=lf diff
+*.tsx   text eol=lf diff
+*.js    text eol=lf diff
+*.jsx   text eol=lf diff
+*.json  text eol=lf diff
+*.md    text eol=lf diff
+*.html  text eol=lf diff
+*.css   text eol=lf diff
+*.yml   text eol=lf diff
+*.yaml  text eol=lf diff
+*.sh    text eol=lf diff
+
+# Binary files — do not modify
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary

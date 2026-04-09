@@ -1,0 +1,55 @@
+#!/bin/bash
+# Pre-commit hook: Strip dangerous invisible Unicode characters
+# These are known prompt injection vectors (zero-width spaces, RTL overrides, etc.)
+
+DANGEROUS_UNICODE=(
+  '\xe2\x80\x8b'    # U+200B Zero Width Space
+  '\xe2\x80\x8c'    # U+200C Zero Width Non-Joiner
+  '\xe2\x80\x8d'    # U+200D Zero Width Joiner
+  '\xe2\x80\x8e'    # U+200E Left-to-Right Mark
+  '\xe2\x80\x8f'    # U+200F Right-to-Left Mark
+  '\xe2\x80\xaa'    # U+202A Left-to-Right Embedding
+  '\xe2\x80\xab'    # U+202B Right-to-Left Embedding
+  '\xe2\x80\xac'    # U+202C Pop Directional Formatting
+  '\xe2\x80\xad'    # U+202D Left-to-Right Override
+  '\xe2\x80\xae'    # U+202E Right-to-Left Override
+  '\xef\xbb\xbf'    # U+FEFF BOM / Zero Width No-Break Space
+  '\xe2\x81\xa0'    # U+2060 Word Joiner
+  '\xe2\x81\xa1'    # U+2061 Function Application (invisible)
+  '\xe2\x81\xa2'    # U+2062 Invisible Times
+  '\xe2\x81\xa3'    # U+2063 Invisible Separator
+  '\xe2\x81\xa4'    # U+2064 Invisible Plus
+  '\xf3\xa0\x80\x80' # U+E0000 Tag characters (start)
+)
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -iE '\.(ts|tsx|js|jsx|md|json|html|css|yml|yaml|txt|sh|py)$' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+  exit 0
+fi
+
+FOUND=0
+for file in $STAGED_FILES; do
+  [ -f "$file" ] || continue
+  for char in "${DANGEROUS_UNICODE[@]}"; do
+    if grep -qP "$char" "$file" 2>/dev/null; then
+      echo "⚠️  DANGEROUS UNICODE found in: $file"
+      # Auto-strip the character
+      sed -i "s/$char//g" "$file" 2>/dev/null
+      git add "$file"
+      FOUND=$((FOUND + 1))
+    fi
+  done
+
+  # Also strip trailing whitespace (another injection vector for hiding text)
+  if grep -qP '[ \t]+$' "$file" 2>/dev/null; then
+    sed -i 's/[[:space:]]*$//' "$file"
+    git add "$file"
+  fi
+done
+
+if [ $FOUND -gt 0 ]; then
+  echo "🔒 Stripped $FOUND dangerous unicode occurrence(s). Files re-staged."
+fi
+
+exit 0
