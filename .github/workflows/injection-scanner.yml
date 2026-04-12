@@ -70,7 +70,7 @@ jobs:
             "atob("
             "Buffer.from.*base64"
             # Hidden content markers
-            "\\[//\\]: #"
+            "\[//\]: #"
           )
 
           # Get changed files in this push
@@ -79,6 +79,9 @@ jobs:
           else
             FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || find . -type f -not -path './.git/*')
           fi
+
+          # Exclude documentation files that legitimately contain injection pattern examples
+          FILES=$(echo "$FILES" | grep -v -E '(SECURITY\.md|CLAUDE\.md|\.github/workflows/injection-scanner\.yml)$')
 
           for pattern in "${PATTERNS[@]}"; do
             MATCHES=$(echo "$FILES" | xargs grep -riln "$pattern" 2>/dev/null || true)
