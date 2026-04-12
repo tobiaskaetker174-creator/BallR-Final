@@ -1,0 +1,67 @@
+#!/bin/bash
+# Pre-commit hook: Unicode Injection Sanitizer
+# Blocks commits containing suspicious invisible Unicode characters
+# that could be used for prompt injection attacks.
+
+echo "🔍 Pre-commit: Scanning for Unicode injection characters..."
+
+# Get staged files (only text files, skip binaries)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|ts|jsx|tsx|json|md|yml|yaml|txt|html|css|py|sh|sql|env|toml)$')
+
+if [ -z "$STAGED_FILES" ]; then
+  echo "✅ No text files staged, skipping scan."
+  exit 0
+fi
+
+FOUND=0
+
+# Zero-width characters and directional overrides
+# U+200B Zero Width Space
+# U+200C Zero Width Non-Joiner
+# U+200D Zero Width Joiner
+# U+FEFF Byte Order Mark (in middle of file)
+# U+202A Left-to-Right Embedding
+# U+202B Right-to-Left Embedding
+# U+202C Pop Directional Formatting
+# U+202D Left-to-Right Override
+# U+202E Right-to-Left Override (commonly used in injection)
+# U+2066 Left-to-Right Isolate
+# U+2067 Right-to-Left Isolate
+# U+2068 First Strong Isolate
+# U+2069 Pop Directional Isolate
+# U+00AD Soft Hyphen (invisible character)
+
+for file in $STAGED_FILES; do
+  if [ ! -f "$file" ]; then
+    continue
+  fi
+
+  # Check for zero-width and directional override characters
+  MATCHES=$(grep -nP '[\x{200B}\x{200C}\x{200D}\x{FEFF}\x{202A}\x{202B}\x{202C}\x{202D}\x{202E}\x{2066}\x{2067}\x{2068}\x{2069}\x{00AD}]' "$file" 2>/dev/null || true)
+
+  if [ -n "$MATCHES" ]; then
+    echo "❌ BLOCKED: Suspicious Unicode in $file:"
+    echo "$MATCHES" | head -5
+    FOUND=$((FOUND + 1))
+  fi
+
+  # Check for homoglyph attacks (Cyrillic/Greek chars that look like Latin)
+  # Only flag if mixed scripts are detected in the same line
+  HOMOGLYPH=$(grep -nP '[\x{0400}-\x{04FF}].*[a-zA-Z]|[a-zA-Z].*[\x{0400}-\x{04FF}]' "$file" 2>/dev/null || true)
+  if [ -n "$HOMOGLYPH" ]; then
+    echo "⚠️  WARNING: Mixed Latin/Cyrillic scripts in $file (possible homoglyph attack):"
+    echo "$HOMOGLYPH" | head -3
+    FOUND=$((FOUND + 1))
+  fi
+done
+
+if [ $FOUND -gt 0 ]; then
+  echo ""
+  echo "❌ COMMIT BLOCKED: $FOUND file(s) contain suspicious Unicode characters."
+  echo "   This could indicate a prompt injection attempt."
+  echo "   To bypass (if you're sure): git commit --no-verify"
+  exit 1
+else
+  echo "✅ No suspicious Unicode characters found."
+  exit 0
+fi
